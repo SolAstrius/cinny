@@ -279,7 +279,6 @@ export function DeviceVerificationOptions() {
         }),
         '_blank'
       );
-      return;
     }
 
     setReset(true);
@@ -342,7 +341,7 @@ export function DeviceVerificationOptions() {
                 escapeDeactivates: false,
               }}
             >
-              <DeviceVerificationReset onCancel={handleCancelReset} />
+              <DeviceVerificationReset onCancel={handleCancelReset} needsApproval={!!authMetadata} />
             </FocusTrap>
           </OverlayCenter>
         </Overlay>

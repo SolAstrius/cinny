@@ -318,9 +318,10 @@ export const DeviceVerificationSetup = forwardRef<HTMLDivElement, DeviceVerifica
 );
 type DeviceVerificationResetProps = {
   onCancel: () => void;
+  needsApproval?: boolean;
 };
 export const DeviceVerificationReset = forwardRef<HTMLDivElement, DeviceVerificationResetProps>(
-  ({ onCancel }, ref) => {
+  ({ onCancel, needsApproval }, ref) => {
     const [reset, setReset] = useState(false);
 
     return (
@@ -363,6 +364,12 @@ export const DeviceVerificationReset = forwardRef<HTMLDivElement, DeviceVerifica
                 <b>Recovery Key</b> or <b>Recovery Passphrase</b> and every device you can verify
                 from.
               </Text>
+              {needsApproval && (
+                <Text size="T300">
+                  Your server needs the reset approved first: confirm it in the tab that just
+                  opened, then come back and press <b>Reset</b> within ten minutes.
+                </Text>
+              )}
             </Box>
             <Button variant="Critical" onClick={() => setReset(true)}>
               <Text size="B400">Reset</Text>
