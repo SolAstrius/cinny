@@ -8,8 +8,9 @@ import React, {
   useEffect,
   useMemo,
   useRef,
+  useState,
 } from 'react';
-import { Box, config, Icons, Scroll } from 'folds';
+import { Box, Button, config, Icons, Scroll, Text } from 'folds';
 import FocusTrap from 'focus-trap-react';
 import { isKeyHotkey } from 'is-hotkey';
 import { Room } from 'matrix-js-sdk';
@@ -19,7 +20,9 @@ import { IEmoji, emojiGroups, emojis } from '../../plugins/emoji';
 import { useEmojiGroupLabels } from './useEmojiGroupLabels';
 import { useEmojiGroupIcons } from './useEmojiGroupIcons';
 import { preventScrollWithArrowKey, stopPropagation } from '../../utils/keyboard';
-import { useRelevantImagePacks } from '../../hooks/useImagePacks';
+import { useGlobalImagePacks, useRelevantImagePacks } from '../../hooks/useImagePacks';
+import { AccountDataEvent } from '../../../types/matrix/accountData';
+import { EmoteRoomsContent } from '../../plugins/custom-emoji/types';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { useRecentEmoji } from '../../hooks/useRecentEmoji';
 import { isUserId, mxcUrlToHttp } from '../../utils/matrix';
@@ -60,11 +63,13 @@ type EmojiGroupItem = {
   id: string;
   name: string;
   items: Array<IEmoji | PackImageReader>;
+  pack?: ImagePack;
 };
 type StickerGroupItem = {
   id: string;
   name: string;
   items: Array<PackImageReader>;
+  pack?: ImagePack;
 };
 
 const useGroups = (
@@ -93,6 +98,7 @@ const useGroups = (
       g.push({
         id: pack.id,
         name: label ?? 'Unknown',
+        pack,
         items: pack
           .getImages(ImageUsage.Emoticon)
           .sort((a, b) => a.shortcode.localeCompare(b.shortcode)),
@@ -121,6 +127,7 @@ const useGroups = (
       g.push({
         id: pack.id,
         name: label ?? 'Unknown',
+        pack,
         items: pack
           .getImages(ImageUsage.Sticker)
           .sort((a, b) => a.shortcode.localeCompare(b.shortcode)),
@@ -390,6 +397,52 @@ export function EmojiBoard({
   const imagePacks = useRelevantImagePacks(usage, imagePackRooms);
   const [emojiGroupItems, stickerGroupItems] = useGroups(tab, imagePacks);
   const groups = emojiTab ? emojiGroupItems : stickerGroupItems;
+
+  // astr.to: a pack from the room you are in can be made available everywhere right here,
+  // instead of hunting for Settings → Emojis & Stickers → Favorite Packs.
+  const globalPacks = useGlobalImagePacks();
+  const globalKeys = useMemo(
+    () =>
+      new Set(
+        globalPacks.map((p) => (p.address ? `${p.address.roomId}|${p.address.stateKey}` : p.id))
+      ),
+    [globalPacks]
+  );
+  const [pinningPack, setPinningPack] = useState<string>();
+  const pinPack = useCallback(
+    async (pack: ImagePack) => {
+      const addr = pack.address;
+      if (!addr) return;
+      setPinningPack(pack.id);
+      try {
+        const content =
+          mx.getAccountData(AccountDataEvent.PoniesEmoteRooms)?.getContent<EmoteRoomsContent>() ??
+          {};
+        const rooms = { ...(content.rooms ?? {}) };
+        rooms[addr.roomId] = { ...(rooms[addr.roomId] ?? {}), [addr.stateKey]: {} };
+        await mx.setAccountData(AccountDataEvent.PoniesEmoteRooms, { ...content, rooms });
+      } finally {
+        setPinningPack(undefined);
+      }
+    },
+    [mx]
+  );
+  const packAction = (pack?: ImagePack) => {
+    const addr = pack?.address;
+    if (!pack || !addr || globalKeys.has(`${addr.roomId}|${addr.stateKey}`)) return undefined;
+    return (
+      <Button
+        variant="Secondary"
+        fill="Soft"
+        size="300"
+        radii="Pill"
+        disabled={pinningPack === pack.id}
+        onClick={() => pinPack(pack)}
+      >
+        <Text size="B300">Use everywhere</Text>
+      </Button>
+    );
+  };
   const renderItem = useItemRenderer(tab);
 
   const searchList = useMemo(() => {
@@ -563,7 +616,12 @@ export function EmojiBoard({
                     ref={virtualizer.measureElement}
                     key={vItem.index}
                   >
-                    <EmojiGroup key={group.id} id={group.id} label={group.name}>
+                    <EmojiGroup
+                      key={group.id}
+                      id={group.id}
+                      label={group.name}
+                      action={packAction(group.pack)}
+                    >
                       {group.items.map(renderItem)}
                     </EmojiGroup>
                   </VirtualTile>
