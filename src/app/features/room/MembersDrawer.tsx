@@ -57,6 +57,7 @@ import { MemberSortMenu } from '../../components/MemberSortMenu';
 import { useOpenUserRoomProfile, useUserRoomProfileState } from '../../state/hooks/userRoomProfile';
 import { useSpaceOptionally } from '../../hooks/useSpace';
 import { ContainerColor } from '../../styles/ContainerColor.css';
+import { AstrPanel } from '../../styles/NightTheme.css';
 import { useFlattenPowerTagMembers, useGetMemberPowerTag } from '../../hooks/useMemberPowerTag';
 import { useRoomCreators } from '../../hooks/useRoomCreators';
 
@@ -246,7 +247,11 @@ export function MembersDrawer({ room, members }: MembersDrawerProps) {
 
   return (
     <Box
-      className={classNames(css.MembersDrawer, ContainerColor({ variant: 'Background' }))}
+      className={classNames(
+        css.MembersDrawer,
+        ContainerColor({ variant: 'Background' }),
+        AstrPanel
+      )}
       shrink="No"
       direction="Column"
     >

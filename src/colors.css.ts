@@ -202,10 +202,10 @@ export const darkTheme = createTheme(color, darkThemeData);
 export const nightTheme = createTheme(color, {
   ...darkThemeData,
   Background: {
-    Container: '#0C1E3A',
-    ContainerHover: '#0E2A4C',
-    ContainerActive: '#12365A',
-    ContainerLine: '#1A4664',
+    Container: 'transparent',
+    ContainerHover: 'rgba(184, 255, 222, 0.07)',
+    ContainerActive: 'rgba(184, 255, 222, 0.12)',
+    ContainerLine: 'rgba(88, 208, 188, 0.22)',
     OnContainer: '#D4FFEE',
   },
   Surface: {

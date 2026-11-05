@@ -1,3 +1,4 @@
+import classNames from 'classnames';
 import React, { useCallback } from 'react';
 import { Box, Line } from 'folds';
 import { useParams } from 'react-router-dom';
@@ -20,6 +21,7 @@ import { callChatAtom } from '../../state/callEmbed';
 import { CallChatView } from './CallChatView';
 import { useCallEmbed } from '../../hooks/useCallEmbed';
 import { useCallMembers, useCallSession } from '../../hooks/useCall';
+import { AstrPanel, AstrPanelMain, AstrRow } from '../../styles/NightTheme.css';
 
 export function Room() {
   const { eventId } = useParams();
@@ -53,9 +55,9 @@ export function Room() {
 
   return (
     <PowerLevelsContextProvider value={powerLevels}>
-      <Box grow="Yes">
+      <Box grow="Yes" className={AstrRow}>
         {callView && (screenSize === ScreenSize.Desktop || !chat) && (
-          <Box grow="Yes" direction="Column">
+          <Box grow="Yes" direction="Column" className={classNames(AstrPanel, AstrPanelMain)}>
             <RoomViewHeader callView />
             <Box grow="Yes">
               <CallView />
@@ -63,7 +65,7 @@ export function Room() {
           </Box>
         )}
         {!callView && (
-          <Box grow="Yes" direction="Column">
+          <Box grow="Yes" direction="Column" className={classNames(AstrPanel, AstrPanelMain)}>
             <RoomViewHeader />
             <Box grow="Yes">
               <RoomView eventId={eventId} />
@@ -80,10 +82,7 @@ export function Room() {
           </>
         )}
         {!callView && screenSize === ScreenSize.Desktop && isDrawer && (
-          <>
-            <Line variant="Background" direction="Vertical" size="300" />
-            <MembersDrawer key={room.roomId} room={room} members={members} />
-          </>
+          <MembersDrawer key={room.roomId} room={room} members={members} />
         )}
       </Box>
     </PowerLevelsContextProvider>

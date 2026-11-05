@@ -8,7 +8,6 @@ export const Sidebar = style([
   {
     width: toRem(66),
     backgroundColor: color.Background.Container,
-    borderRight: `${config.borderWidth.B300} solid ${color.Background.ContainerLine}`,
 
     display: 'flex',
     flexDirection: 'column',
