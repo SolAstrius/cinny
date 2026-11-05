@@ -1,6 +1,6 @@
 import { findAndReplace } from '../../utils/findAndReplace';
 import { ESC_BLOCK_SEQ, UN_ESC_BLOCK_SEQ } from './block/rules';
-import { EscapeRule, CAP_INLINE_SEQ } from './inline/rules';
+import { EscapeRule, CAP_INLINE_SEQ, MATHS_INLINE_REG, MathsRule } from './inline/rules';
 import { runInlineRule } from './inline/runner';
 import { replaceMatch } from './internal';
 
@@ -12,11 +12,31 @@ import { replaceMatch } from './internal';
  * @param text - The input markdown plain-text containing escape characters (e.g., `"some \*italic\*"`)
  * @returns The plain-text with markdown escape sequences removed (e.g., `"some *italic*"`)
  */
-export const unescapeMarkdownInlineSequences = (text: string): string =>
-  runInlineRule(text, EscapeRule, (t) => {
-    if (t === '') return t;
-    return unescapeMarkdownInlineSequences(t);
-  }) ?? text;
+export const unescapeMarkdownInlineSequences = (text: string): string => {
+  if (text === '') return text;
+  // TeX inside `$…$` keeps its own backslashes
+  const keepMaths = runInlineRule(
+    text,
+    { match: MathsRule.match, html: (_, match) => match[0] },
+    unescapeMarkdownInlineSequences
+  );
+  if (keepMaths !== undefined) return keepMaths;
+  return runInlineRule(text, EscapeRule, unescapeMarkdownInlineSequences) ?? text;
+};
+
+/**
+ * Escapes the `$` around text that would otherwise turn into inline maths when sent again.
+ *
+ * @param text - The plain-text (e.g., `"a $x$ b"`)
+ * @returns The plain-text with those dollars escaped (e.g., `"a \$x\$ b"`)
+ */
+export const escapeMathsDelimiters = (text: string): string =>
+  findAndReplace(
+    text,
+    new RegExp(MATHS_INLINE_REG.source, 'g'),
+    (match) => `\\$${match[1]}\\$`,
+    (t) => t
+  ).join('');
 
 /**
  * Recovers the markdown escape sequences in the given plain-text.
@@ -38,7 +58,7 @@ export const escapeMarkdownInlineSequences = (text: string): string => {
     (t) => t
   );
 
-  return parts.join('');
+  return escapeMathsDelimiters(parts.join(''));
 };
 
 /**

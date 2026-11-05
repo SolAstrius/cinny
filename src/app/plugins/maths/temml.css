@@ -1,0 +1,337 @@
+/* Temml 0.14.0 dist/Temml-Local.css, every selector scoped under .mx-maths. */
+@font-face {
+  font-family: 'Temml';
+  src: url('Temml.woff2') format('woff2');
+  font-weight: normal;
+  font-style: normal;
+}
+.mx-maths math {
+  font-family: 'STIX Two Math', 'Cambria Math', 'Latin Modern Math', 'Noto Sans Math', math;
+  font-style: normal;
+  font-weight: normal;
+  line-height: normal;
+  font-size-adjust: none;
+  text-indent: 0;
+  text-transform: none;
+  letter-spacing: normal;
+  word-wrap: normal;
+  direction: ltr;
+  font-feature-settings: 'dtls' off;
+}
+.mx-maths math * {
+  border-color: currentColor;
+}
+.mx-maths math.tml-display {
+  display: block;
+  width: 100%;
+}
+.mx-maths .mathcal {
+  font-feature-settings: 'ss01';
+}
+.mx-maths math .mathscr {
+  font-family: 'Temml';
+}
+.mx-maths mo.tml-prime {
+  font-family: Temml;
+}
+.mx-maths mfrac > :nth-child(2),
+.mx-maths msqrt,
+.mx-maths mover > :first-child {
+  math-shift: compact;
+}
+.mx-maths .menclose {
+  display: inline-block;
+  position: relative;
+  padding: 0.5ex 0ex;
+}
+.mx-maths .tml-cancelto {
+  display: inline-block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  padding: 0.5ex 0ex;
+  background-color: currentColor;
+  -webkit-mask-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'><defs><marker id='a' markerHeight='5' markerUnits='strokeWidth' markerWidth='7' orient='auto' refX='7' refY='2.5'><path fill='black' d='m0 0 7 2.5L0 5z'/></marker></defs><line x2='100%25' y1='100%25' stroke='black' stroke-width='.06em' marker-end='url(%23a)' vector-effect='non-scaling-stroke'/></svg>");
+  mask-image: url("data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg'><defs><marker id='a' markerHeight='5' markerUnits='strokeWidth' markerWidth='7' orient='auto' refX='7' refY='2.5'><path fill='black' d='m0 0 7 2.5L0 5z'/></marker></defs><line x2='100%25' y1='100%25' stroke='black' stroke-width='.06em' marker-end='url(%23a)' vector-effect='non-scaling-stroke'/></svg>");
+  -webkit-mask-repeat: no-repeat;
+  mask-repeat: no-repeat;
+  -webkit-mask-size: 100% 100%;
+  mask-size: 100% 100%;
+  -webkit-mask-position: 0 0;
+  mask-position: 0 0;
+}
+@supports (-moz-appearance: none) {
+  .mx-maths .tml-vec {
+    transform: scale(0.75);
+  }
+  .mx-maths .ff-narrow {
+    width: 0em;
+  }
+  .mx-maths .ff-nudge-left {
+    margin-left: -0.2em;
+  }
+  .mx-maths .ff-squash mtd {
+    display: block;
+    height: 0;
+  }
+}
+@supports (not (-moz-appearance: none)) {
+  .mx-maths mo.tml-prime {
+    font-family: Temml;
+  }
+  .mx-maths .tml-sml-pad {
+    padding-left: 0.05em;
+  }
+  .mx-maths .tml-med-pad {
+    padding-left: 0.1em;
+  }
+  .mx-maths .tml-lrg-pad {
+    padding-left: 0.15em;
+  }
+}
+@supports (-webkit-backdrop-filter: blur(1px)) {
+  .mx-maths .wbk-acc {
+    transform: translate(0em, 0.431em);
+  }
+  .mx-maths .wbk-sml {
+    transform: translate(0.07em, 0);
+  }
+  .mx-maths .wbk-sml-acc {
+    transform: translate(0.07em, 0.431em);
+  }
+  .mx-maths .wbk-sml-vec {
+    transform: scale(0.75) translate(0.07em, 0);
+  }
+  .mx-maths .wbk-med {
+    transform: translate(0.14em, 0);
+  }
+  .mx-maths .wbk-med-acc {
+    transform: translate(0.14em, 0.431em);
+  }
+  .mx-maths .wbk-med-vec {
+    transform: scale(0.75) translate(0.14em, 0);
+  }
+  .mx-maths .wbk-lrg {
+    transform: translate(0.21em, 0);
+  }
+  .mx-maths .wbk-lrg-acc {
+    transform: translate(0.21em, 0.431em);
+  }
+  .mx-maths .wbk-lrg-vec {
+    transform: scale(0.75) translate(0.21em, 0);
+  }
+}
+.mx-maths menclose {
+  -webkit-print-color-adjust: exact;
+  print-color-adjust: exact;
+}
+.mx-maths .tml-right {
+  text-align: right;
+}
+.mx-maths .tml-left {
+  text-align: left;
+}
+.mx-maths .tml-shift-left {
+  margin-left: -200%;
+}
+@supports (not (-webkit-backdrop-filter: blur(1px))) and (not (-moz-appearance: none)) {
+  .mx-maths .chr-sml {
+    transform: translate(0.07em, 0);
+  }
+  .mx-maths .chr-sml-vec {
+    transform: scale(0.75) translate(0.07em, 0);
+  }
+  .mx-maths .chr-med {
+    transform: translate(0.14em, 0);
+  }
+  .mx-maths .chr-med-vec {
+    transform: scale(0.75) translate(0.14em, 0);
+  }
+  .mx-maths .chr-lrg {
+    transform: translate(0.21em, 0);
+  }
+  .mx-maths .chr-lrg-vec {
+    transform: scale(0.75) translate(0.21em, 0);
+  }
+  .mx-maths .tml-shift-left {
+    margin-left: -100%;
+  }
+  .mx-maths menclose {
+    position: relative;
+    padding: 0.5ex 0ex;
+  }
+  .mx-maths .tml-overline {
+    padding: 0.1em 0 0 0;
+    border-top: 0.065em solid;
+  }
+  .mx-maths .tml-underline {
+    padding: 0 0 0.1em 0;
+    border-bottom: 0.065em solid;
+  }
+  .mx-maths .tml-cancel {
+    display: inline-block;
+    position: absolute;
+    left: 0.5px;
+    bottom: 0;
+    width: 100%;
+    height: 100%;
+    background-color: currentColor;
+  }
+  .mx-maths .upstrike {
+    clip-path: polygon(0.05em 100%, 0em calc(100% - 0.05em), calc(100% - 0.05em) 0em, 100% 0.05em);
+  }
+  .mx-maths .downstrike {
+    clip-path: polygon(0em 0.05em, 0.05em 0em, 100% calc(100% - 0.05em), calc(100% - 0.05em) 100%);
+  }
+  .mx-maths .sout {
+    clip-path: polygon(
+      0em calc(55% + 0.0333em),
+      0em calc(55% - 0.0333em),
+      100% calc(55% - 0.0333em),
+      100% calc(55% + 0.0333em)
+    );
+  }
+  .mx-maths .tml-xcancel {
+    clip-path: polygon(
+      0.05em 0em,
+      0em 0.05em,
+      calc(50% - 0.05em) 50%,
+      0em calc(100% - 0.05em),
+      0.05em 100%,
+      50% calc(50% + 0.05em),
+      calc(100% - 0.05em) 100%,
+      100% calc(100% - 0.05em),
+      calc(50% + 0.05em) 50%,
+      100% 0.05em,
+      calc(100% - 0.05em) 0%,
+      50% calc(50% - 0.05em)
+    );
+  }
+  .mx-maths .longdiv-top {
+    border-top: 0.067em solid;
+    padding: 0.1em 0.2em 0.2em 0.433em;
+  }
+  .mx-maths .longdiv-arc {
+    position: absolute;
+    top: 0;
+    bottom: 0.1em;
+    left: -0.4em;
+    width: 0.7em;
+    border: 0.067em solid;
+    transform: translateY(-0.067em);
+    border-radius: 70%;
+    clip-path: inset(0 0 0 0.4em);
+    box-sizing: border-box;
+  }
+  .mx-maths .menclose {
+    display: inline-block;
+    text-align: left;
+    position: relative;
+  }
+  .mx-maths .phasor-bottom {
+    border-bottom: 0.067em solid;
+    padding: 0.2em 0.2em 0.1em 0.6em;
+  }
+  .mx-maths .phasor-angle {
+    display: inline-block;
+    position: absolute;
+    left: 0.5px;
+    bottom: -0.04em;
+    height: 100%;
+    aspect-ratio: 0.5;
+    background-color: currentColor;
+    clip-path: polygon(0.05em 100%, 0em calc(100% - 0.05em), calc(100% - 0.05em) 0em, 100% 0.05em);
+  }
+  .mx-maths .tml-fbox {
+    padding: 3pt;
+    border: 1px solid;
+  }
+  .mx-maths .circle-pad {
+    padding: 0.267em;
+  }
+  .mx-maths .textcircle {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    left: 0;
+    border: 0.067em solid;
+    border-radius: 50%;
+  }
+  .mx-maths .actuarial {
+    padding: 0.03889em 0.03889em 0 0.03889em;
+    border-width: 0.08em 0.08em 0em 0em;
+    border-style: solid;
+    margin-right: 0.03889em;
+  }
+  .mx-maths .tml-tilde-2 {
+    transform: scale(2, 1.1);
+  }
+  .mx-maths .tml-tilde-3 {
+    transform: scale(3, 1.1);
+  }
+  .mx-maths .tml-tilde-4 {
+    transform: scale(4, 1.1);
+  }
+  .mx-maths .tml-hat-1 {
+    transform: scale(1.9, 1);
+  }
+  .mx-maths .tml-hat-2 {
+    transform: scale(3.9, 1);
+  }
+  .mx-maths .tml-hat-3 {
+    transform: scale(5.8, 1);
+  }
+  .mx-maths .tml-hat-4 {
+    transform: scale(7.8, 1);
+  }
+  .mx-maths .tml-right {
+    text-align: -webkit-right;
+  }
+  .mx-maths .tml-left {
+    text-align: -webkit-left;
+  }
+}
+.mx-maths .special-fraction {
+  font-family: 'STIX TWO', 'Times New Roman', Times, Tinos, serif;
+}
+.mx-maths math {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+}
+.mx-maths math > mrow {
+  padding: 0.5ex 0ex;
+}
+.mx-maths mtable.tml-jot > mtr > mtd {
+  padding-top: 0.7ex;
+  padding-bottom: 0.7ex;
+}
+.mx-maths mtable.tml-small mtd {
+  padding-top: 0.35ex;
+  padding-bottom: 0.35ex;
+}
+@-moz-document url-prefix() {
+  .mx-maths math {
+    display: inline;
+  }
+  .mx-maths math > mrow {
+    padding: 0;
+  }
+  .mx-maths mtd,
+  .mx-maths mtable.tml-small mtd {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+  .mx-maths mtable.tml-jot > mtr > mtd {
+    padding-top: 0.2ex;
+    padding-bottom: 0.2ex;
+  }
+}
+.mx-maths .tml-eqn::before {
+  counter-increment: tmlEqnNo;
+  content: '(' counter(tmlEqnNo) ')';
+}
+.mx-maths {
+  counter-reset: tmlEqnNo;
+}

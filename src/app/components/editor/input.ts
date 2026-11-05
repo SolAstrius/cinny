@@ -139,6 +139,9 @@ const getInlineElement = (node: ChildNode, processText: ProcessTextCallback): In
   }
 
   if (isTag(node)) {
+    const tex = node.attribs['data-mx-maths'];
+    if (typeof tex === 'string') return [{ text: `$${tex}$` }];
+
     const markType = getInlineNodeMarkType(node);
     if (markType) {
       return getInlineMarkElement(markType, node, (child) => {
@@ -458,6 +461,17 @@ export const domToEditorInput = (
       if (node.name === 'blockquote') {
         appendLine();
         children.push(...parseBlockquoteNode(node, processText));
+        return;
+      }
+      if (node.name === 'div' && typeof node.attribs['data-mx-maths'] === 'string') {
+        appendLine();
+        const texLines = `$$${node.attribs['data-mx-maths']}$$`.split('\n');
+        children.push(
+          ...texLines.map<ParagraphElement>((text) => ({
+            type: BlockType.Paragraph,
+            children: [{ text }],
+          }))
+        );
         return;
       }
       if (node.name === 'pre') {
