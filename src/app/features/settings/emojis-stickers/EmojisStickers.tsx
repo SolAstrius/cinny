@@ -3,6 +3,7 @@ import { Box, Text, IconButton, Icon, Icons, Scroll } from 'folds';
 import { Page, PageContent, PageHeader } from '../../../components/page';
 import { GlobalPacks } from './GlobalPacks';
 import { UserPack } from './UserPack';
+import { ImportPack } from './ImportPack';
 import { ImagePack } from '../../../plugins/custom-emoji';
 import { ImagePackView } from '../../../components/image-pack-view';
 
@@ -41,6 +42,7 @@ export function EmojisStickers({ requestClose }: EmojisStickersProps) {
           <PageContent>
             <Box direction="Column" gap="700">
               <UserPack onViewPack={setImagePack} />
+              <ImportPack />
               <GlobalPacks onViewPack={setImagePack} />
             </Box>
           </PageContent>
