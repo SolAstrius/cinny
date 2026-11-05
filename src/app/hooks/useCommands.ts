@@ -27,6 +27,13 @@ import { Membership, StateEvent } from '../../types/matrix/room';
 import { getStateEvent } from '../utils/room';
 import { splitWithSpace } from '../utils/common';
 import { createRoomEncryptionState } from '../components/create-room';
+import { SCENE_EVENT_TYPE, SCENE_INFO } from '../plugins/call/CallScene';
+import {
+  describeScene,
+  parseSceneCommand,
+  SCENE_COMMAND_USAGE,
+} from '../plugins/call/sceneCommand';
+import { readRoomScene, sendRoomScene } from './useRoomScene';
 
 export const SHRUG = '¯\\_(ツ)_/¯';
 export const TABLEFLIP = '(╯°□°)╯︵ ┻━┻';
@@ -135,7 +142,8 @@ export const parseTimestampFlag = (input: string): number | undefined => {
   return timestamp;
 };
 
-export type CommandExe = (payload: string) => Promise<void>;
+/** astr.to: a command may resolve to a short status line, shown above the composer. */
+export type CommandExe = (payload: string) => Promise<void | string>;
 
 export enum Command {
   Me = 'me',
@@ -159,6 +167,7 @@ export enum Command {
   UnFlip = 'unflip',
   Delete = 'delete',
   Acl = 'acl',
+  Scene = 'scene',
 }
 
 export type CommandContent = {
@@ -529,6 +538,30 @@ export const useCommands = (mx: MatrixClient, room: Room): CommandRecord => {
           aclContent.deny?.sort();
 
           await mx.sendStateEvent(room.roomId, StateEvent.RoomServerAcl as any, aclContent);
+        },
+      },
+      [Command.Scene]: {
+        name: Command.Scene,
+        description: `Set the call scene. Example: /scene rain intensity=90 lightning=off, /scene off`,
+        exe: async (payload) => {
+          const current = readRoomScene(
+            getStateEvent(room, SCENE_EVENT_TYPE as unknown as StateEvent)
+          );
+          const command = parseSceneCommand(payload, current);
+          if (command.action === 'show') {
+            return current
+              ? `Scene: ${describeScene(current)}\nUsage: ${SCENE_COMMAND_USAGE}`
+              : `No scene is set.\nUsage: ${SCENE_COMMAND_USAGE}`;
+          }
+          if (command.action === 'off') {
+            if (!current) return 'No scene is set.';
+            await sendRoomScene(mx, room.roomId, undefined);
+            return 'Scene removed.';
+          }
+          await sendRoomScene(mx, room.roomId, command.content);
+          return `${SCENE_INFO[command.content.scene].label} scene set: ${describeScene(
+            command.content
+          )}`;
         },
       },
     }),

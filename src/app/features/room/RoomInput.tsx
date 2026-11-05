@@ -25,6 +25,7 @@ import {
   PopOut,
   Scroll,
   Text,
+  color,
   config,
   toRem,
 } from 'folds';
@@ -141,6 +142,8 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
 
     const [msgDraft, setMsgDraft] = useAtom(roomIdToMsgDraftAtomFamily(roomId));
     const [replyDraft, setReplyDraft] = useAtom(roomIdToReplyDraftAtomFamily(roomId));
+    // astr.to: a command's result or error, shown above the composer until dismissed
+    const [commandNote, setCommandNote] = useState<{ error: boolean; text: string }>();
     const replyUserID = replyDraft?.userId;
 
     const powerLevelTags = usePowerLevelTags(room, powerLevels);
@@ -329,8 +332,24 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
         customHtml = `${UNFLIP} ${customHtml}`;
       } else if (commandName) {
         const commandContent = commands[commandName as Command];
+        setCommandNote(undefined);
         if (commandContent) {
-          commandContent.exe(plainText);
+          commandContent
+            .exe(plainText)
+            .then((result) => {
+              if (typeof result === 'string') setCommandNote({ error: false, text: result });
+            })
+            .catch((err: unknown) => {
+              if (commandName === Command.Scene) {
+                setCommandNote({
+                  error: true,
+                  text: err instanceof Error ? err.message : String(err),
+                });
+              } else {
+                // eslint-disable-next-line no-console
+                console.error(err);
+              }
+            });
         }
         resetEditor(editor);
         resetEditorHistory(editor);
@@ -544,41 +563,73 @@ export const RoomInput = forwardRef<HTMLDivElement, RoomInputProps>(
           onKeyUp={handleKeyUp}
           onPaste={handlePaste}
           top={
-            replyDraft && (
+            (commandNote || replyDraft) && (
               <div>
-                <Box
-                  alignItems="Center"
-                  gap="300"
-                  style={{ padding: `${config.space.S200} ${config.space.S300} 0` }}
-                >
-                  <IconButton
-                    onClick={() => setReplyDraft(undefined)}
-                    variant="SurfaceVariant"
-                    size="300"
-                    radii="300"
+                {commandNote && (
+                  <Box
+                    alignItems="Center"
+                    gap="300"
+                    style={{ padding: `${config.space.S200} ${config.space.S300} 0` }}
                   >
-                    <Icon src={Icons.Cross} size="50" />
-                  </IconButton>
-                  <Box direction="Row" gap="200" alignItems="Center">
-                    {replyDraft.relation?.rel_type === RelationType.Thread && <ThreadIndicator />}
-                    <ReplyLayout
-                      userColor={replyUsernameColor}
-                      username={
-                        <Text size="T300" truncate>
-                          <b>
-                            {getMemberDisplayName(room, replyDraft.userId) ??
-                              getMxIdLocalPart(replyDraft.userId) ??
-                              replyDraft.userId}
-                          </b>
-                        </Text>
-                      }
+                    <IconButton
+                      onClick={() => setCommandNote(undefined)}
+                      variant="SurfaceVariant"
+                      size="300"
+                      radii="300"
+                      aria-label="Dismiss"
                     >
-                      <Text size="T300" truncate>
-                        {trimReplyFromBody(replyDraft.body)}
-                      </Text>
-                    </ReplyLayout>
+                      <Icon src={Icons.Cross} size="50" />
+                    </IconButton>
+                    <Text
+                      size="T300"
+                      style={{
+                        color: commandNote.error ? color.Critical.Main : undefined,
+                        whiteSpace: 'pre-wrap',
+                      }}
+                    >
+                      {commandNote.text}
+                    </Text>
                   </Box>
-                </Box>
+                )}
+                {replyDraft && (
+                  <div>
+                    <Box
+                      alignItems="Center"
+                      gap="300"
+                      style={{ padding: `${config.space.S200} ${config.space.S300} 0` }}
+                    >
+                      <IconButton
+                        onClick={() => setReplyDraft(undefined)}
+                        variant="SurfaceVariant"
+                        size="300"
+                        radii="300"
+                      >
+                        <Icon src={Icons.Cross} size="50" />
+                      </IconButton>
+                      <Box direction="Row" gap="200" alignItems="Center">
+                        {replyDraft.relation?.rel_type === RelationType.Thread && (
+                          <ThreadIndicator />
+                        )}
+                        <ReplyLayout
+                          userColor={replyUsernameColor}
+                          username={
+                            <Text size="T300" truncate>
+                              <b>
+                                {getMemberDisplayName(room, replyDraft.userId) ??
+                                  getMxIdLocalPart(replyDraft.userId) ??
+                                  replyDraft.userId}
+                              </b>
+                            </Text>
+                          }
+                        >
+                          <Text size="T300" truncate>
+                            {trimReplyFromBody(replyDraft.body)}
+                          </Text>
+                        </ReplyLayout>
+                      </Box>
+                    </Box>
+                  </div>
+                )}
               </div>
             )
           }
