@@ -24,7 +24,7 @@ import {
   MatrixClient,
 } from 'matrix-js-sdk';
 import { getCallCapabilities } from './utils';
-import { downloadMedia, mxcUrlToHttp } from '../../utils/matrix';
+import { mxcUrlToHttp } from '../../utils/matrix';
 
 export class CallWidgetDriver extends WidgetDriver {
   private allowedCapabilities: Set<Capability>;
@@ -308,8 +308,15 @@ export class CallWidgetDriver extends WidgetDriver {
     if (!httpUrl) {
       throw new Error('Call widget failed to download file! No http url!');
     }
-    const blob = await downloadMedia(httpUrl);
-    return { file: blob };
+    // Authenticate explicitly: the service worker does not reliably attach the token to
+    // requests made on behalf of the call widget (uncontrolled page, session not yet pushed),
+    // and a 401 body handed to Element Call renders as a blank avatar.
+    const token = this.mx.getAccessToken();
+    const res = await fetch(httpUrl, token ? { headers: { Authorization: `Bearer ${token}` } } : {});
+    if (!res.ok) {
+      throw new Error(`Call widget failed to download file! HTTP ${res.status}`);
+    }
+    return { file: await res.blob() };
   }
 
   public getKnownRooms(): string[] {
