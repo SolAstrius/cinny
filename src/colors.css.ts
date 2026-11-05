@@ -197,6 +197,61 @@ const darkThemeData = {
 
 export const darkTheme = createTheme(color, darkThemeData);
 
+// astr.to: pixel night sky — navy surfaces, starlight text, ember accents.
+export const nightTheme = createTheme(color, {
+  ...darkThemeData,
+  Background: {
+    Container: '#0E0F26',
+    ContainerHover: '#15173A',
+    ContainerActive: '#1C1F4A',
+    ContainerLine: '#262A5C',
+    OnContainer: '#ECE8D6',
+  },
+  Surface: {
+    Container: '#15173A',
+    ContainerHover: '#1C1F4A',
+    ContainerActive: '#23275A',
+    ContainerLine: '#2D3268',
+    OnContainer: '#ECE8D6',
+  },
+  SurfaceVariant: {
+    Container: '#1C1F4A',
+    ContainerHover: '#23275A',
+    ContainerActive: '#2D3268',
+    ContainerLine: '#383E78',
+    OnContainer: '#ECE8D6',
+  },
+  Primary: {
+    Main: '#FFB25E',
+    MainHover: '#FFA644',
+    MainActive: '#FF9E38',
+    MainLine: '#F7952C',
+    OnMain: '#2A1406',
+    Container: '#4E2614',
+    ContainerHover: '#5A2C18',
+    ContainerActive: '#66321C',
+    ContainerLine: '#723820',
+    OnContainer: '#FFE2C4',
+  },
+  Secondary: {
+    Main: '#ECE8D6',
+    MainHover: '#DAD5BF',
+    MainActive: '#CFCAB3',
+    MainLine: '#C4BFA7',
+    OnMain: '#0E0F26',
+    Container: '#2D3268',
+    ContainerHover: '#383E78',
+    ContainerActive: '#434A88',
+    ContainerLine: '#4E5698',
+    OnContainer: '#ECE8D6',
+  },
+  Other: {
+    FocusRing: 'rgba(255, 178, 94, 0.5)',
+    Shadow: 'rgba(0, 0, 0, 1)',
+    Overlay: 'rgba(5, 6, 20, 0.8)',
+  },
+});
+
 export const butterTheme = createTheme(color, {
   ...darkThemeData,
   Background: {

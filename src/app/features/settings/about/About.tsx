@@ -39,16 +39,16 @@ export function About({ requestClose }: AboutProps) {
                   <img
                     style={{ width: toRem(60), height: toRem(60) }}
                     src={CinnySVG}
-                    alt="Cinny logo"
+                    alt="astr.to"
                   />
                 </Box>
                 <Box direction="Column" gap="300">
                   <Box direction="Column" gap="100">
                     <Box gap="100" alignItems="End">
-                      <Text size="H3">Cinny</Text>
-                      <Text size="T200">v4.12.8</Text>
+                      <Text size="H3">astr.to</Text>
+                      <Text size="T200">Cinny v4.12.8</Text>
                     </Box>
-                    <Text>Yet another matrix client.</Text>
+                    <Text>Matrix-клиент astr.to на основе Cinny.</Text>
                   </Box>
 
                   <Box gap="200" wrap="Wrap">

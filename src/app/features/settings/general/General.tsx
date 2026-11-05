@@ -37,8 +37,8 @@ import { SettingTile } from '../../../components/setting-tile';
 import { KeySymbol } from '../../../utils/key-symbol';
 import { isMacOS } from '../../../utils/user-agent';
 import {
-  DarkTheme,
   LightTheme,
+  NightTheme,
   Theme,
   ThemeKind,
   useSystemThemeKind,
@@ -82,7 +82,7 @@ function SelectTheme({ disabled }: { disabled?: boolean }) {
   const themeNames = useThemeNames();
   const [themeId, setThemeId] = useSetting(settingsAtom, 'themeId');
   const [menuCords, setMenuCords] = useState<RectCords>();
-  const selectedTheme = themes.find((theme) => theme.id === themeId) ?? LightTheme;
+  const selectedTheme = themes.find((theme) => theme.id === themeId) ?? NightTheme;
 
   const handleThemeMenu: MouseEventHandler<HTMLButtonElement> = (evt) => {
     setMenuCords(evt.currentTarget.getBoundingClientRect());
@@ -149,7 +149,7 @@ function SystemThemePreferences() {
   const darkThemes = themes.filter((theme) => theme.kind === ThemeKind.Dark);
 
   const selectedLightTheme = lightThemes.find((theme) => theme.id === lightThemeId) ?? LightTheme;
-  const selectedDarkTheme = darkThemes.find((theme) => theme.id === darkThemeId) ?? DarkTheme;
+  const selectedDarkTheme = darkThemes.find((theme) => theme.id === darkThemeId) ?? NightTheme;
 
   const [ltCords, setLTCords] = useState<RectCords>();
   const [dtCords, setDTCords] = useState<RectCords>();

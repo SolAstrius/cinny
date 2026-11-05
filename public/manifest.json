@@ -1,14 +1,14 @@
 {
-  "name": "Cinny",
-  "short_name": "Cinny",
-  "description": "Yet another matrix client",
+  "name": "astr.to",
+  "short_name": "astr.to",
+  "description": "Matrix на astr.to",
   "dir": "auto",
   "lang": "en-US",
   "display": "standalone",
   "orientation": "portrait",
   "start_url": "./",
-  "background_color": "#fff",
-  "theme_color": "#fff",
+  "background_color": "#0E0F26",
+  "theme_color": "#0E0F26",
   "icons": [
     {
       "src": "./public/android/android-chrome-36x36.png",

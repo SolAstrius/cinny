@@ -1,29 +1,16 @@
 import React, { ReactNode, useEffect } from 'react';
 import { configClass, varsClass } from 'folds';
-import {
-  DarkTheme,
-  LightTheme,
-  ThemeContextProvider,
-  ThemeKind,
-  useActiveTheme,
-  useSystemThemeKind,
-} from '../hooks/useTheme';
+import { NightTheme, ThemeContextProvider, useActiveTheme } from '../hooks/useTheme';
 import { useSetting } from '../state/hooks/settings';
 import { settingsAtom } from '../state/settings';
 
 export function UnAuthRouteThemeManager() {
-  const systemThemeKind = useSystemThemeKind();
-
+  // astr.to: the pre-login screens always use the night-sky theme.
   useEffect(() => {
     document.body.className = '';
     document.body.classList.add(configClass, varsClass);
-    if (systemThemeKind === ThemeKind.Dark) {
-      document.body.classList.add(...DarkTheme.classNames);
-    }
-    if (systemThemeKind === ThemeKind.Light) {
-      document.body.classList.add(...LightTheme.classNames);
-    }
-  }, [systemThemeKind]);
+    document.body.classList.add(...NightTheme.classNames);
+  }, []);
 
   return null;
 }

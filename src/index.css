@@ -23,7 +23,8 @@
 }
 
 .dark-theme,
-.butter-theme {
+.butter-theme,
+.night-theme {
   --tc-link: hsl(213deg 100% 80%);
 
   --mx-uc-1: hsl(208, 100%, 75%);
@@ -36,6 +37,11 @@
   --mx-uc-8: hsl(94, 100%, 80%);
 
   --font-secondary: 'InterVariable', var(--font-emoji), sans-serif;
+}
+
+/* astr.to: links in starlight-warm yellow on the night theme */
+.night-theme {
+  --tc-link: #ffce54;
 }
 
 html {

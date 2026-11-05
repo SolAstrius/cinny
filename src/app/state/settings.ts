@@ -50,8 +50,8 @@ export interface Settings {
 }
 
 const defaultSettings: Settings = {
-  themeId: undefined,
-  useSystemTheme: true,
+  themeId: 'night-theme',
+  useSystemTheme: false,
   lightThemeId: undefined,
   darkThemeId: undefined,
   monochromeMode: false,
