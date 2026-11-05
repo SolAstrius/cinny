@@ -63,3 +63,9 @@ globalStyle(`.night-theme ${AstrRail}`, {
 });
 export const AstrRailPart = style({ flex: '0 1 auto', minHeight: 0 });
 export const AstrHole = style({ flex: '1 1 0', minHeight: 0 });
+// On narrow screens nothing floats (no gaps around the panels), so a hole of raw sky in the
+// rail reads as a rendering defect: fill it with the panel shade there.
+globalStyle(`.night-theme ${AstrHole}`, {
+  backgroundColor: 'rgba(10, 24, 46, 0.72)',
+  '@media': { [DESKTOP]: { backgroundColor: 'transparent' } },
+});

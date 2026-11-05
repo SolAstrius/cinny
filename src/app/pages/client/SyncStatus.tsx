@@ -30,12 +30,10 @@ export function SyncStatus({ mx }: SyncStatusProps) {
     }, [])
   );
 
-  if (
-    (stateData.current === SyncState.Prepared ||
-      stateData.current === SyncState.Syncing ||
-      stateData.current === SyncState.Catchup) &&
-    stateData.previous !== SyncState.Syncing
-  ) {
+  // astr.to: Prepared/Syncing already mean we are connected. Upstream waited for two Syncing
+  // states in a row, i.e. up to two 30 s long-polls on a quiet account; only Catchup
+  // (recovering after a dropped connection) is still "connecting".
+  if (stateData.current === SyncState.Catchup) {
     return (
       <Box direction="Column" shrink="No">
         <Box
