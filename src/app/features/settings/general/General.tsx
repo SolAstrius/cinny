@@ -896,6 +896,7 @@ function Messages() {
   const [urlPreview, setUrlPreview] = useSetting(settingsAtom, 'urlPreview');
   const [encUrlPreview, setEncUrlPreview] = useSetting(settingsAtom, 'encUrlPreview');
   const [showHiddenEvents, setShowHiddenEvents] = useSetting(settingsAtom, 'showHiddenEvents');
+  const [showQuirks, setShowQuirks] = useSetting(settingsAtom, 'showQuirks');
 
   return (
     <Box direction="Column" gap="100">
@@ -916,6 +917,13 @@ function Messages() {
               onChange={setLegacyUsernameColor}
             />
           }
+        />
+      </SequenceCard>
+      <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">
+        <SettingTile
+          title="Show Typing Quirks"
+          description="Display other people's typing quirks (colour, case and letter swaps). Only changes how messages look here; the text sent is unchanged."
+          after={<Switch variant="Primary" value={showQuirks} onChange={setShowQuirks} />}
         />
       </SequenceCard>
       <SequenceCard className={SequenceCardStyle} variant="SurfaceVariant" direction="Column">

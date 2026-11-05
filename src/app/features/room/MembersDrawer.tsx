@@ -60,6 +60,12 @@ import { ContainerColor } from '../../styles/ContainerColor.css';
 import { AstrPanel } from '../../styles/NightTheme.css';
 import { useFlattenPowerTagMembers, useGetMemberPowerTag } from '../../hooks/useMemberPowerTag';
 import { useRoomCreators } from '../../hooks/useRoomCreators';
+import {
+  MUSIC_PROFILE_KEY,
+  STATUS_PROFILE_KEY,
+  getProfileString,
+  useExtendedProfile,
+} from '../../hooks/useExtendedProfile';
 
 type MemberDrawerHeaderProps = {
   room: Room;
@@ -126,6 +132,10 @@ function MemberItem({
   const avatarUrl = avatarMxcUrl
     ? mx.mxcUrlToHttp(avatarMxcUrl, 100, 100, 'crop', undefined, false, useAuthentication)
     : undefined;
+  const profile = useExtendedProfile(member.userId);
+  const status = getProfileString(profile, STATUS_PROFILE_KEY, 120);
+  const music = getProfileString(profile, MUSIC_PROFILE_KEY, 120);
+  const statusLine = status ?? (music ? `♪ ${music}` : undefined);
 
   return (
     <MenuItem
@@ -153,10 +163,15 @@ function MemberItem({
         )
       }
     >
-      <Box grow="Yes">
+      <Box grow="Yes" direction="Column">
         <Text size="T400" truncate>
           {name}
         </Text>
+        {statusLine && (
+          <Text size="T200" priority="300" truncate title={statusLine}>
+            {statusLine}
+          </Text>
+        )}
       </Box>
     </MenuItem>
   );

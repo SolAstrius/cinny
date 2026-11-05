@@ -32,6 +32,7 @@ import { getMemberDisplayName } from '../utils/room';
 import { EMOJI_PATTERN, sanitizeForRegex, URL_NEG_LB } from '../utils/regex';
 import { getHexcodeForEmoji, getShortcodeFor } from './emoji';
 import { findAndReplace } from '../utils/findAndReplace';
+import { QuirkTextNode } from '../components/quirk/Quirk';
 import {
   parseMatrixToRoom,
   parseMatrixToRoomEvent,
@@ -310,6 +311,16 @@ export function CodeBlock({
   );
 }
 
+const NO_QUIRK_TAGS = ['a', 'code', 'pre'];
+const isInsideNoQuirk = (node: DOMText): boolean => {
+  let { parent } = node;
+  while (parent) {
+    if ('name' in parent && NO_QUIRK_TAGS.includes(parent.name)) return true;
+    parent = parent.parent;
+  }
+  return false;
+};
+
 export const getReactCustomHtmlParser = (
   mx: MatrixClient,
   roomId: string | undefined,
@@ -506,10 +517,19 @@ export const getReactCustomHtmlParser = (
           jsx = highlightText(params.highlightRegex, jsx);
         }
 
-        if (linkify) {
-          return <Linkify options={params.linkifyOpts}>{jsx}</Linkify>;
+        const fallback = linkify ? <Linkify options={params.linkifyOpts}>{jsx}</Linkify> : jsx;
+
+        if (!params.highlightRegex && !isInsideNoQuirk(domNode)) {
+          return (
+            <QuirkTextNode
+              text={domNode.data}
+              fallback={fallback}
+              decorate={scaleSystemEmoji}
+              wrap={(nodes) => <Linkify options={params.linkifyOpts}>{nodes}</Linkify>}
+            />
+          );
         }
-        return jsx;
+        return fallback;
       }
       return undefined;
     },
