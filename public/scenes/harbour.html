@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>harbour</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0b1030; overflow: hidden; }
+  canvas { display: block; width: 100vw; height: 100vh; object-fit: cover; image-rendering: pixelated; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script src="kit.js"></script>
+<script>
+const EVENT = {
+  type: 'ink.astrius.room.scene', state_key: '',
+  content: { scene: 'harbour', clouds: 50, wind: 25, beam: true, seed: 3107 },
+};
+const P = Kit.params(EVENT.content);
+const W = 384, H = 216, SEA = 138;
+const g = Kit.canvas(W, H);
+const rnd = Kit.mulberry32(P.seed);
+const ri = (a, b) => a + Math.floor(rnd() * (b - a + 1));
+const { px, dither } = Kit;
+
+const C = {
+  sky: '#0b1030', halo: '#161d4a', sea: '#070b24', ripple: '#0e1640', rippleLit: '#1a2458',
+  moon: '#f3ecd2', crater: '#d6cba6', trail: ['#e9dfb4', '#b9b08a', '#7f7a62'],
+  land: '#060818', landEdge: '#121a3a', tower: '#d9d6dc', stripe: '#a2464e', lamp: '#fff0c4', roof: '#2a2032',
+  beam: '#e6dca4', beamDim: '#8f8866', hull: '#151b42', hullEdge: '#3a4478', mast: '#1a2048', sail: '#2a3468', red: '#ff5a5a', green: '#5affa0', warm: '#ffd65c',
+  star: ['#ece8d6', '#9fb0d8', '#5d6a96'],
+};
+// moonlit ramp for the cloud generator: 0..11 body, rim reaches the pale end; undersides unused (glow off)
+const RAMP = ['#090c26', '#0d1130', '#11163a', '#151b44', '#19214e', '#1e2758', '#242e63', '#2b366e',
+  '#343f79', '#3f4a84', '#58629a', '#7c84b4', '#000', '#000', '#000', '#000'];
+const MOON = { x: 196, y: 34, r: 11 };
+
+// ---- stars, clouds lit from the moon
+const stars = [];
+for (let i = 0; i < 150; i++) {
+  const x = ri(0, W - 1), y = ri(0, SEA - 4);
+  if (Math.hypot(x - MOON.x, y - MOON.y) > 22) stars.push({ x, y, c: ri(0, 2), ph: rnd() * 6.3 });
+}
+const clouds = [];
+for (let i = 0; i < Math.round(3 + 8 * P.clouds); i++) {
+  const w = ri(60, 140), h = ri(18, 32), x = ri(-60, W), y = ri(8, 84), seed = ri(1, 1e9);
+  clouds.push({ w, h, x, y, seed, map: Kit.generateCloudMap(seed, w, h), v: 0.03 + rnd() * 0.05, s: null, lx: null });
+}
+// relight a cloud only when the moon's side of it changes, as the astrius.ink shader decides per pixel
+// clouds close to the moon get brighter (a silver lining) instead of cutting a dark bite out of it
+function cloudSprite(c) {
+  const dx = MOON.x - (c.x + c.w / 2), dy = MOON.y - (c.y + c.h / 2), d = Math.hypot(dx, dy) || 1;
+  const lx = Math.round((dx / d) * 4) / 4, ly = Math.min(-0.3, Math.round((dy / d) * 4) / 4);
+  const ex = Math.max(c.x - MOON.x, 0, MOON.x - (c.x + c.w)), ey = Math.max(c.y - MOON.y, 0, MOON.y - (c.y + c.h));
+  const near = Math.hypot(ex, ey), boost = near < 6 ? 4 : near < 30 ? 2 : near < 60 ? 1 : 0;
+  if (c.s && c.lx === lx && c.ly === ly && c.boost === boost) return c.s;
+  const n = Math.hypot(lx, ly);
+  c.lx = lx; c.ly = ly; c.boost = boost;
+  c.s = Kit.shadeCloud(c.map, c.seed, { v: (c.y + c.h) / SEA, ramp: RAMP, light: [lx / n, ly / n], glow: false, boost });
+  return c.s;
+}
+
+// ---- static land: headland with a lighthouse, rocks in front
+const [land, lg] = Kit.offscreen(W, H);
+const LH = { x: 338, base: 100 };
+for (let x = 270; x < W; x++) {
+  const top = Math.round(LH.base + 2 + Math.max(0, (300 - x) * 0.9) + Math.sin(x * 0.3) * 1.5 + (x > 360 ? (x - 360) * 0.2 : 0));
+  for (let y = top; y < SEA + 4; y++) { lg.fillStyle = y === top ? C.landEdge : C.land; lg.fillRect(x, y, 1, 1); }
+}
+{
+  const { x, base } = LH;
+  for (let y = base - 34; y < base + 2; y++) {
+    const w = 6 + Math.floor((y - (base - 34)) / 12);
+    lg.fillStyle = Math.floor((y - (base - 34)) / 6) % 2 ? C.stripe : C.tower;
+    lg.fillRect(x - Math.floor(w / 2), y, w, 1);
+  }
+  lg.fillStyle = C.roof; lg.fillRect(x - 4, base - 42, 9, 2); lg.fillRect(x - 2, base - 44, 5, 2);
+  lg.fillStyle = C.lamp; lg.fillRect(x - 3, base - 40, 7, 5);
+  lg.fillStyle = C.roof; lg.fillRect(x - 4, base - 35, 9, 1);
+}
+const LAMP = { x: LH.x, y: LH.base - 38 };
+for (let x = 0; x < 120; x++) {  // foreground rocks
+  const top = Math.round(H - 10 - Math.max(0, 60 - x) * 0.25 + Math.sin(x * 0.4) * 2 + Math.sin(x * 0.11) * 3);
+  for (let y = top; y < H; y++) { lg.fillStyle = y === top ? C.landEdge : C.land; lg.fillRect(x, y, 1, 1); }
+}
+
+// ---- boats
+const boats = [
+  { x: 70, y: 168, kind: 'sail', ph: 0.0 }, { x: 196, y: 152, kind: 'fish', ph: 1.7 }, { x: 250, y: 182, kind: 'sail', ph: 3.1 },
+];
+function drawBoat(b, t) {
+  const bob = Math.round(Math.sin(t * 0.035 + b.ph) * 1.2), y = b.y + bob, x = b.x;
+  g.fillStyle = C.hullEdge; g.fillRect(x - 12, y, 24, 1);
+  g.fillStyle = C.hull;
+  for (let i = 1; i < 4; i++) g.fillRect(x - 12 + i, y + i, 24 - i * 2, 1);
+  if (b.kind === 'sail') {
+    g.fillStyle = C.mast; g.fillRect(x, y - 26, 1, 26);
+    g.fillStyle = C.sail;
+    for (let i = 0; i < 22; i++) g.fillRect(x + 1, y - 24 + i, Math.floor(i * 0.45), 1);
+    for (let i = 0; i < 14; i++) g.fillRect(x - Math.floor(i * 0.5), y - 16 + i, Math.floor(i * 0.5), 1);
+    px(g, x, y - 27, C.red);
+  } else {
+    g.fillStyle = C.hull; g.fillRect(x - 3, y - 6, 9, 6);
+    g.fillStyle = C.mast; g.fillRect(x + 2, y - 16, 1, 10);
+    px(g, x - 1, y - 4, C.warm); px(g, x + 2, y - 4, C.warm); px(g, x + 2, y - 17, C.green);
+  }
+  // their lights reflected: short streaks on fixed rows, slow sway
+  for (let k = 0; k < 3; k++) {
+    const ry = y + 5 + k * 3, sway = Math.round(Math.sin(t * 0.03 + ry * 0.4 + b.ph) * 1.3);
+    g.fillStyle = b.kind === 'sail' ? '#6a2a3a' : '#6e5a2c';
+    g.fillRect(x + sway - (b.kind === 'sail' ? 0 : 1), ry, 2, 1);
+  }
+}
+
+// the same cloud lit from the lighthouse lamp, cached per light direction and strength
+function beamLit(c, level) {
+  const cx = c.x + c.w / 2, cy = c.y + c.h / 2;
+  const [lx, ly] = Kit.lightFrom(cx, cy, LAMP.x, LAMP.y, 0);
+  const key = `${Math.round(lx * 4)},${Math.round(ly * 4)},${level}`;
+  c.beam = c.beam || {};
+  if (!c.beam[key]) c.beam[key] = Kit.shadeCloud(c.map, c.seed, { v: (c.y + c.h) / SEA, ramp: BEAM_RAMP, light: [lx, ly], boost: level * 2, glow: false });
+  return c.beam[key];
+}
+// lamp-lit ramp: the body warms toward the beam colour
+const BEAM_RAMP = ['#0d1030', '#141638', '#1c1d42', '#26254a', '#322e52', '#40385a', '#504462', '#62526a',
+  '#776270', '#8e7676', '#a88e80', '#c6ae92', '#000', '#000', '#000', '#000'];
+
+let t = 0, shoot = null;
+function step() {
+  t++;
+  for (const c of clouds) {
+    c.x += c.v + P.wind * 0.08;
+    if (c.x > W + 10) { c.x = -c.w - ri(0, 60); c.s = null; }
+    if (c.x < -c.w - 70) { c.x = W + ri(0, 20); c.s = null; }
+  }
+  if (!shoot && rnd() < 0.003) shoot = { x: ri(20, 240), y: ri(6, 50), age: 0 };
+  if (shoot && ++shoot.age > 22) shoot = null;
+}
+
+function draw() {
+  g.fillStyle = C.sky; g.fillRect(0, 0, W, SEA);
+  for (const s of stars) if (Math.sin(t * 0.04 + s.ph) > -0.7) px(g, s.x, s.y, C.star[s.c]);
+  if (shoot) for (let i = 0; i < 8 && i < shoot.age; i++) px(g, shoot.x + (shoot.age - i) * 3, shoot.y + (shoot.age - i), i < 2 ? '#ffffff' : '#7f8ac0');
+  // moon with a dithered halo ring
+  for (let y = MOON.y - 20; y <= MOON.y + 20; y++) for (let x = MOON.x - 20; x <= MOON.x + 20; x++) {
+    const d = Math.hypot(x - MOON.x, y - MOON.y);
+    if (d <= MOON.r) px(g, x, y, (x - MOON.x + 3) ** 2 + (y - MOON.y + 2) ** 2 < 9 || (x - MOON.x - 4) ** 2 + (y - MOON.y - 3) ** 2 < 5 ? C.crater : C.moon);
+    else if (d < 19 && dither(x, y, 0.45 - (d - MOON.r) * 0.05)) px(g, x, y, C.halo);
+  }
+  for (const c of clouds) g.drawImage(cloudSprite(c), Math.round(c.x), c.y);
+
+  // lighthouse beam: a dithered wedge that sweeps; long toward us on the left, a stub on the far side.
+  // Clouds inside the wedge switch to a sprite lit from the lamp, clipped to the wedge's columns.
+  if (P.beam) {
+    const a = t * 0.025, cs = Math.cos(a), dir = cs < 0 ? -1 : 1, len = (dir < 0 ? 300 : 40) * Math.abs(cs);
+    const span = (i) => { const half = 1 + i * 0.04; return [Math.round(LAMP.y - half + i * 0.02) - 2, Math.round(2 * half) + 5]; };
+    if (Math.abs(cs) > 0.12) {
+      const level = Math.abs(cs) > 0.6 ? 2 : 1;
+      for (const c of clouds) {
+        const x0 = Math.max(Math.round(c.x), dir < 0 ? Math.round(LAMP.x - len) : LAMP.x + 4);
+        const x1 = Math.min(Math.round(c.x) + c.w, dir < 0 ? LAMP.x - 4 : Math.round(LAMP.x + len));
+        if (x1 <= x0) continue;
+        g.save(); g.beginPath();
+        for (let x = x0; x < x1; x++) { const [y, h] = span(Math.abs(x - LAMP.x)); g.rect(x, y, 1, h); }
+        g.clip();
+        g.drawImage(beamLit(c, level), Math.round(c.x), c.y);
+        g.restore();
+      }
+    }
+    for (let i = 4; i < len; i++) {
+      const half = 1 + i * 0.04, x = LAMP.x + dir * i;
+      for (let dy = -half; dy <= half; dy++) {
+        const y = Math.round(LAMP.y + dy + i * 0.02);
+        const k = 1 - i / (len + 1), edge = Math.abs(dy) / half;
+        const level = (edge < 0.45 ? 1.0 : 0.45) * (0.35 + 0.65 * k) * Math.min(1, Math.abs(cs) * 1.4);
+        if (dither(x | 0, y, level)) px(g, x, y, edge < 0.45 && k > 0.5 ? C.beam : C.beamDim);
+      }
+    }
+  }
+
+  g.fillStyle = C.sea; g.fillRect(0, SEA, W, H - SEA);
+  for (let y = SEA + 2; y < H; y += 3) {
+    const off = (t * 0.12 + y * 13) % 29;
+    g.fillStyle = C.ripple;
+    for (let x = -29 + off; x < W; x += 29) g.fillRect(x | 0, y, 10 + ((y >> 2) & 3), 1);
+  }
+  // moon trail: widening column of dashes on fixed rows that sway slowly
+  for (let y = SEA + 1; y < H; y++) {
+    if ((y - SEA) % 2) continue;
+    const depth = (y - SEA) / (H - SEA), hw = 2 + depth * 18;
+    const sway = Math.sin(t * 0.02 + y * 0.31) * (1 + depth * 3);
+    const col = C.trail[depth < 0.25 ? 0 : depth < 0.6 ? 1 : 2];
+    for (let x = Math.floor(MOON.x - hw); x <= MOON.x + hw; x++) {
+      const k = (x + Math.round(sway) + y * 3) % 7;
+      if (k < 3 && dither(x, y, 1 - Math.abs(x - MOON.x) / (hw + 1) * 0.8)) px(g, x, y, col);
+    }
+  }
+  g.drawImage(land, 0, 0);
+  for (const b of boats) drawBoat(b, t);
+}
+Kit.loop(step, draw);
+</script>
+</body>
+</html>

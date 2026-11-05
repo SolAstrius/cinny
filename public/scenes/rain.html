@@ -1,0 +1,320 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>rain</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #0e0f26; overflow: hidden; }
+  canvas {
+    display: block; width: 100vw; height: 100vh;
+    object-fit: cover; image-rendering: pixelated;
+  }
+</style>
+</head>
+<body>
+<canvas id="c" width="384" height="216"></canvas>
+<script src="kit.js"></script>
+<script>
+// The scene is driven by the content of an `ink.astrius.room.scene` state event.
+// Same content + same seed => every client (and the agent's video track) renders the same harbour.
+// Overrides for testing: #intensity=100&wind=-60&lightning=0&seed=7
+const EVENT = {
+  type: 'ink.astrius.room.scene',
+  state_key: '',
+  content: { scene: 'rain', intensity: 70, wind: -35, lightning: true, seed: 1105 },
+};
+const P = Kit.params(EVENT.content);
+
+const W = 384, H = 216, HORIZON = 150, PIER_Y = 196, PIER_X1 = 176;
+const cv = document.getElementById('c');
+const g = cv.getContext('2d');
+g.imageSmoothingEnabled = false;
+
+function mulberry32(a) {
+  return () => {
+    a |= 0; a = (a + 0x6d2b79f5) | 0;
+    let t = Math.imul(a ^ (a >>> 15), 1 | a);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+const rnd = mulberry32(P.seed);
+const ri = (a, b) => a + Math.floor(rnd() * (b - a + 1));
+
+const C = {
+  sky: '#0e0f26', flash: '#2c3a6e', flash2: '#1d2650',
+  far: '#1a2246', near: '#0f1430',
+  water: '#0a1124', ripple: '#121c3c',
+  pier: '#1a1322', plank: '#251a2c', post: '#120d18',
+  lamp: '#fff0c4', lampHead: '#2a2030', cone: '#3b2f2c', conePool: '#6a4a30',
+  rain: ['#2e4068', '#4a6595', '#8eaed6'], rainLit: '#ffd98a',
+  splash: ['#8eaed6', '#4a6595', '#2e4068'],
+  bolt: '#eef0ff',
+  win: ['#ffd65c', '#ffd65c', '#ffd65c', '#f79a3c', '#58d0bc'],
+};
+
+const px = (x, y, c) => { g.fillStyle = c; g.fillRect(x | 0, y | 0, 1, 1); };
+
+// ---- clouds: astrius.ink's generator and puff lighting (kit.js). Night ramp: 0..11 cold blues,
+// 12..15 the city's sodium glow on the undersides. Each lightning strike relights them from the bolt.
+const CLOUD_RAMP = ['#07081a', '#0b0d24', '#0f122d', '#131736', '#171c40', '#1b214a', '#202754', '#262e5e',
+  '#2d3668', '#353f73', '#3e497e', '#4a5589', '#3a2f4a', '#4d3a50', '#634654', '#7a5454'];
+
+// the overcast deck: big, dim, low-contrast clouds tiled over the whole sky, so there is no flat
+// background behind the distinct clouds, only more cloud receding into murk
+const DECK_RAMP = ['#08091c', '#0a0b20', '#0c0e25', '#0e1029', '#10132e', '#121632', '#151936', '#181c3b',
+  '#1b2040', '#1f2446', '#24294c', '#2a2f53', '#1a1630', '#211a35', '#29203a', '#30253f'];
+const deck = [];
+for (let row = 0; row < 5; row++) {
+  for (let x = -ri(40, 120); x < W + 40; x += ri(120, 170)) {
+    const w = ri(170, 260), h = ri(38, 58), y = -34 + row * 30 + ri(-6, 6), seed = ri(1, 1e9);
+    const map = Kit.generateCloudMap(seed, w, h);
+    const glow = row >= 3;  // only the rows hanging over the city catch its glow
+    const sv = Math.min(1, (y + h) / HORIZON), s0 = Kit.shadeCloud(map, seed, { v: sv, ramp: DECK_RAMP, glow });
+    deck.push({ map, seed, w, h, sv, s: s0, lit: s0, x, y, v: 0.012 + row * 0.004, ramp: DECK_RAMP, glow });
+  }
+}
+deck.sort((a, b) => a.y - b.y);
+
+const clouds = [];
+for (let i = 0; i < Math.round(12 + 10 * P.intensity); i++) {
+  const w = ri(90, 210), h = ri(26, 50), y = ri(-24, 70), seed = ri(1, 1e9);
+  const v = Math.min(1, (y + h) / HORIZON);
+  const map = Kit.generateCloudMap(seed, w, h);
+  const glow = v > 0.62;  // only clouds low over the city catch its glow
+  const s = Kit.shadeCloud(map, seed, { v, ramp: CLOUD_RAMP, glow });
+  clouds.push({ map, seed, w, h, sv: v, glow, s, lit: s, x: ri(-90, W), y, v: 0.03 + (1 - v) * 0.02 + rnd() * 0.05, depth: 1 - v });
+}
+clouds.sort((a, b) => b.depth - a.depth);  // higher (farther) clouds first, low ones drawn over them
+
+function relight(bx, by) {
+  for (const c of [...deck, ...clouds, ...scud]) {
+    const cx = c.x + c.w / 2, cy = c.y + c.h / 2, d = Math.hypot(bx - cx, by - cy);
+    const boost = d < 70 ? 6 : d < 150 ? 4 : d < 240 ? 2 : 1;
+    c.lit = Kit.shadeCloud(c.map, c.seed, { v: c.sv, ramp: c.ramp || CLOUD_RAMP, light: Kit.lightFrom(cx, cy, bx, by, 0), boost, glow: c.glow !== false });
+  }
+}
+
+// ---- skyline: two depth layers, windows kept as a list so they can flicker
+const buildings = [], windows = [];
+function skyline(layer, minH, maxH) {
+  let x = -ri(0, 10);
+  while (x < W) {
+    const w = ri(8, 24), h = ri(minH, maxH);
+    buildings.push({ x, w, h, layer });
+    for (let wy = HORIZON - h + 3; wy < HORIZON - 2; wy += 3)
+      for (let wx = x + 2; wx < x + w - 2; wx += 3)
+        if (rnd() < (layer ? 0.2 : 0.12))
+          windows.push({ x: wx, y: wy, c: C.win[ri(0, C.win.length - 1)], on: true, layer });
+    x += w + ri(0, layer ? 3 : 1);
+  }
+}
+skyline(0, 24, 62);
+skyline(1, 12, 40);
+
+// aviation lights on the tallest roofs, a TV mast on the tallest far tower
+const tallest = (layer, n) => buildings.filter((b) => b.layer === layer).sort((a, b) => b.h - a.h).slice(0, n);
+const MAST = (() => { const b = tallest(0, 1)[0]; return { x: b.x + (b.w >> 1), top: HORIZON - b.h - 28, base: HORIZON - b.h }; })();
+const beacons = [
+  { x: MAST.x, y: MAST.top, ph: 0, layer: 0 }, { x: MAST.x, y: MAST.top + 14, ph: 0, layer: 0 },
+  ...tallest(0, 4).slice(1).map((b, i) => ({ x: b.x + (b.w >> 1), y: HORIZON - b.h - 1, ph: 13 * (i + 1), layer: 0 })),
+  ...tallest(1, 3).map((b, i) => ({ x: b.x + 1, y: HORIZON - b.h - 1, ph: 29 * (i + 1), layer: 1 })),
+];
+
+// the city's glow under the overcast: two flat bands just above the rooftops
+const [haze, hz] = Kit.offscreen(W, H);
+hz.fillStyle = '#141433'; hz.fillRect(0, HORIZON - 34, W, 18);
+hz.fillStyle = '#1b1838'; hz.fillRect(0, HORIZON - 16, W, 16);
+
+// low scud: smaller clouds near the rooftops, their undersides lit by the city
+const scud = [];
+for (let i = 0; i < Math.round(5 + 5 * P.intensity); i++) {
+  const w = ri(60, 140), h = ri(14, 22), y = ri(72, 104), seed = ri(1, 1e9);
+  const map = Kit.generateCloudMap(seed, w, h, { layers: 2 });
+  const sv = 0.95, s0 = Kit.shadeCloud(map, seed, { v: sv, ramp: CLOUD_RAMP, light: [0.1, -0.99] });
+  scud.push({ map, seed, w, h, sv, s: s0, lit: s0, x: ri(-60, W), y, v: 0.12 + rnd() * 0.1 });
+}
+let plane = null;
+
+// ---- static foreground: pier, posts, lamp; rendered once
+const fg = document.createElement('canvas'); fg.width = W; fg.height = H;
+{
+  const f = fg.getContext('2d');
+  const r = (x, y, w, h, c) => { f.fillStyle = c; f.fillRect(x, y, w, h); };
+  for (let x = 8; x < PIER_X1; x += 22) r(x, PIER_Y, 3, H - PIER_Y, C.post);
+  r(0, PIER_Y, PIER_X1, 4, C.pier);
+  for (let x = 0; x < PIER_X1; x += 6) r(x, PIER_Y, 1, 4, C.plank);
+  r(0, PIER_Y + 4, PIER_X1, 1, C.post);
+  r(124, 118, 2, PIER_Y - 118, C.post);     // lamp pole
+  r(120, 114, 10, 4, C.lampHead);           // lamp head
+  r(122, 118, 6, 1, C.lamp);                // bulb
+}
+// light cone: flat checkerboard dither, no gradients
+const LAMP_X = 125, LAMP_Y = 119;
+const inCone = (x, y) => y > LAMP_Y && y < PIER_Y && Math.abs(x - LAMP_X) < (y - LAMP_Y) * 0.48;
+const cone = document.createElement('canvas'); cone.width = W; cone.height = H;
+{
+  const f = cone.getContext('2d'); f.fillStyle = C.cone;
+  for (let y = LAMP_Y; y < PIER_Y; y++) for (let x = 0; x < W; x++)
+    if (inCone(x, y) && x % 2 === 0 && (y + (x >> 1)) % 3 === 0) f.fillRect(x, y, 1, 1);
+}
+// warm pool where the cone meets the planks (drawn over the pier)
+const pool = document.createElement('canvas'); pool.width = W; pool.height = H;
+{
+  const f = pool.getContext('2d'); f.fillStyle = C.conePool;
+  const half = (PIER_Y - LAMP_Y) * 0.48;
+  for (let x = Math.ceil(LAMP_X - half); x < LAMP_X + half; x++) {
+    if (x % 6 === 0) continue;  // plank seams stay dark
+    f.fillRect(x, PIER_Y, 1, 1);
+    if (Math.abs(x - LAMP_X) < half * 0.6) f.fillRect(x, PIER_Y + 1, 1, 1);
+  }
+}
+
+// ---- rain
+const LAYERS = [{ len: 3, v: 2.4 }, { len: 5, v: 4.0 }, { len: 8, v: 6.2 }];
+const drops = [];
+function spawn(d, top) {
+  d.layer = rnd() < 0.45 ? 0 : rnd() < 0.6 ? 1 : 2;
+  d.x = ri(-40, W + 40);
+  d.y = top ? -ri(0, 40) : ri(-H, H);
+  const L = LAYERS[d.layer];
+  // where it lands: far drops die at the horizon, nearer ones on the water or the pier
+  d.ground = d.layer === 0 ? HORIZON + ri(0, 8) : ri(HORIZON + 4, H);
+  d.len = L.len; d.v = L.v * (0.85 + rnd() * 0.3);
+}
+const NDROPS = Math.round(520 * P.intensity);
+for (let i = 0; i < NDROPS; i++) { const d = {}; spawn(d, false); drops.push(d); }
+
+const splashes = [];
+let flash = 0, bolt = null, t = 0;
+
+function step() {
+  t++;
+  for (const c of clouds) {
+    c.x += c.v + P.wind * 0.1;
+    if (c.x > W + 10) c.x = -c.s.width - ri(0, 40);
+    if (c.x < -c.s.width - 50) c.x = W + ri(0, 20);
+  }
+  if (t % 9 === 0) { const w = windows[ri(0, windows.length - 1)]; w.on = !w.on; }
+  for (const c of deck) {
+    c.x += c.v + P.wind * 0.04;
+    if (c.x > W + 10) c.x = -c.w - ri(0, 30);
+    if (c.x < -c.w - 40) c.x = W + ri(0, 10);
+  }
+  for (const c of scud) {
+    c.x += c.v + P.wind * 0.2;
+    if (c.x > W + 10) c.x = -c.w - ri(0, 60);
+    if (c.x < -c.w - 70) c.x = W + ri(0, 20);
+  }
+  if (!plane && rnd() < 0.002) plane = { x: -6, y: ri(44, 66) };
+  if (plane && (plane.x += 0.45) > W + 6) plane = null;
+
+  for (const d of drops) {
+    d.y += d.v; d.x += P.wind * d.v;
+    const onPier = d.x >= 0 && d.x < PIER_X1 && d.layer === 2 && d.ground > PIER_Y;
+    const floor = onPier ? PIER_Y : d.ground;
+    if (d.y >= floor) {
+      if (d.layer > 0) splashes.push({ x: d.x | 0, y: floor, age: 0, pier: onPier, big: d.layer === 2 });
+      spawn(d, true);
+    }
+  }
+  for (let i = splashes.length - 1; i >= 0; i--) if (++splashes[i].age > 12) splashes.splice(i, 1);
+
+  if (flash > 0) flash--;
+  if (bolt && --bolt.life <= 0) bolt = null;
+  if (P.lightning && flash === 0 && rnd() < 0.0025 * (0.5 + P.intensity)) {
+    flash = 9;
+    const pts = [[ri(40, W - 40), ri(20, 40)]];
+    while (pts[pts.length - 1][1] < HORIZON - ri(0, 30)) {
+      const [x, y] = pts[pts.length - 1];
+      pts.push([x + ri(-7, 7), y + ri(5, 11)]);
+    }
+    bolt = { pts, life: 4 };
+    relight(pts[0][0], pts[0][1] + 12);
+  }
+}
+
+function line(x0, y0, x1, y1, c) {
+  const n = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0)) | 0;
+  for (let i = 0; i <= n; i++) px(x0 + (x1 - x0) * i / n, y0 + (y1 - y0) * i / n, c);
+}
+
+function draw() {
+  const lit = flash === 9 || flash === 8 || flash === 4;
+  g.fillStyle = lit ? C.flash : flash === 7 || flash === 3 ? C.flash2 : C.sky;
+  g.fillRect(0, 0, W, HORIZON);
+  for (const c of deck) g.drawImage(lit ? c.lit : c.s, Math.round(c.x), c.y);
+  for (const c of clouds) g.drawImage(lit ? c.lit : c.s, Math.round(c.x), c.y);
+  if (plane) {
+    const x = Math.round(plane.x);
+    px(x - 2, plane.y, '#ff4a4a'); px(x + 2, plane.y, '#5affa0'); px(x, plane.y, '#3a3f66');
+    if (t % 32 < 3) px(x, plane.y - 1, '#ffffff');
+  }
+  g.drawImage(haze, 0, 0);
+  for (const c of scud) g.drawImage(lit ? c.lit : c.s, Math.round(c.x), c.y);
+  if (bolt) for (let i = 1; i < bolt.pts.length; i++) line(...bolt.pts[i - 1], ...bolt.pts[i], C.bolt);
+
+  for (const layer of [0, 1]) {
+    g.fillStyle = layer ? C.near : C.far;
+    for (const b of buildings) if (b.layer === layer) g.fillRect(b.x, HORIZON - b.h, b.w, b.h);
+    if (layer === 0) { g.fillStyle = C.far; g.fillRect(MAST.x, MAST.top, 1, MAST.base - MAST.top); g.fillRect(MAST.x - 1, MAST.top + 14, 3, 1); }
+    for (const w of windows) if (w.layer === layer && w.on) px(w.x, w.y, w.c);
+    for (const bc of beacons) if (bc.layer === layer && (t + bc.ph) % 60 < 22) px(bc.x, bc.y, '#ff4a4a');
+  }
+
+  // water, its ripples, and broken reflections of the lit windows
+  g.fillStyle = C.water; g.fillRect(0, HORIZON, W, H - HORIZON);
+  for (let y = HORIZON + 2; y < H; y += 4) {
+    const off = (t * 0.3 + y * 7) % 23;
+    for (let x = -23 + off; x < W; x += 23) { g.fillStyle = C.ripple; g.fillRect(x | 0, y, 9, 1); }
+  }
+  for (const w of windows) {
+    if (!w.on || w.layer !== 1) continue;
+    // a short streak per window on fixed rows; it sways slowly, so it flows instead of strobing
+    const ry = 2 * HORIZON - w.y;
+    if (ry >= H || ry % 3 === 2) continue;
+    const sway = Math.sin(t * 0.025 + ry * 0.35 + w.x * 0.11);
+    const x0 = Math.round(w.x + sway * 1.6);
+    const len = 1 + Math.round(1 + Math.sin(t * 0.017 + w.x) );
+    g.fillStyle = w.c === C.win[4] ? '#2d6f6a' : '#7a5a2c';
+    g.fillRect(x0, ry, len, 1);
+  }
+
+  g.drawImage(cone, 0, 0);
+  g.drawImage(fg, 0, 0);
+  g.drawImage(pool, 0, 0);
+
+  for (const d of drops) {
+    const c = C.rain[d.layer];
+    for (let i = 0; i < d.len; i++) {
+      const x = d.x - P.wind * i, y = d.y - i;
+      if (y < 0) continue;
+      px(x, y, inCone(x | 0, y | 0) && d.layer > 0 ? C.rainLit : c);
+    }
+  }
+  for (const s of splashes) {
+    const k = s.age, col = C.splash[Math.min(2, k >> 2)];
+    if (s.pier) {
+      if (k < 6) { px(s.x - 1 - (k >> 1), s.y - 1 - (k < 3 ? k : 5 - k), col); px(s.x + 1 + (k >> 1), s.y - 1 - (k < 3 ? k : 5 - k), col); }
+    } else {
+      const rx = 1 + (k >> 1) * (s.big ? 1 : 0.6), ry = Math.max(1, rx / 3);
+      for (let a = 0; a < 12; a++) {
+        const th = a / 12 * Math.PI * 2;
+        px(s.x + Math.cos(th) * rx, s.y + Math.sin(th) * ry, col);
+      }
+    }
+  }
+}
+
+let last = 0, acc = 0;
+function frame(ts) {
+  acc += Math.min(100, ts - last); last = ts;
+  while (acc >= 1000 / 30) { step(); acc -= 1000 / 30; }
+  draw();
+  requestAnimationFrame(frame);
+}
+requestAnimationFrame((ts) => { last = ts; frame(ts); });
+</script>
+</body>
+</html>

@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>space</title>
+<style>
+  html, body { margin: 0; height: 100%; background: #05040f; overflow: hidden; }
+  canvas { display: block; width: 100vw; height: 100vh; object-fit: cover; image-rendering: pixelated; }
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<script src="kit.js"></script>
+<script>
+const EVENT = {
+  type: 'ink.astrius.room.scene', state_key: '',
+  content: { scene: 'space', speed: 100, comet: true, seed: 4404 },
+};
+const P = Kit.params(EVENT.content);
+const W = 384, H = 216;
+const g = Kit.canvas(W, H);
+const rnd = Kit.mulberry32(P.seed);
+const ri = (a, b) => a + Math.floor(rnd() * (b - a + 1));
+const { px, dither } = Kit;
+
+const SUN = { x: 318, y: 46 };
+const BG = '#05040f';
+// nebula ramp: deep violet body, magenta mids, a teal rim where the star catches the puffs
+const NEB = ['#06041a', '#090520', '#0d0726', '#11092d', '#160b34', '#1c0e3b', '#231143', '#2b154b',
+  '#2f2459', '#2a4266', '#357079', '#6fb8a6', '#000', '#000', '#000', '#000'];
+// the same nebula lit by the comet: warm
+const NEB_HOT = ['#0b0618', '#140a20', '#1e0d28', '#2a1030', '#371436', '#45183a', '#551d3e', '#672442',
+  '#7c2e44', '#954046', '#b85e4a', '#e6935a', '#000', '#000', '#000', '#000'];
+
+// ---- stars in three parallax layers
+const layers = [0.015, 0.05, 0.13].map((v, li) => {
+  const n = [220, 90, 30][li], arr = [];
+  for (let i = 0; i < n; i++) arr.push({ x: rnd() * W, y: rnd() * H, c: li === 2 ? (rnd() < 0.3 ? '#ffd9a8' : '#ffffff') : li ? '#9fb0d8' : '#4d5480', tw: rnd() < 0.15, ph: rnd() * 6.3 });
+  return { v, arr };
+});
+
+// ---- nebula: many MK Cloud puff clusters gathered into a few masses. Half are flipped upside down
+// (shaded with the light mirrored first, so after the flip their rims still face the star); the flat
+// bases MK Cloud gives every cloud disappear inside the mass.
+function flipV(src) {
+  const [o, og] = Kit.offscreen(src.width, src.height);
+  og.translate(0, src.height); og.scale(1, -1); og.drawImage(src, 0, 0);
+  return o;
+}
+function shadeToward(c, ramp, lx0, ly0, boost) {
+  const [lx, ly] = Kit.lightFrom(c.x + c.w / 2, c.y + c.h / 2, lx0, ly0, -1);
+  const spr = Kit.shadeCloud(c.map, c.seed, { v: 0.4, ramp, light: [lx, c.flip ? -ly : ly], boost, glow: false });
+  return c.flip ? flipV(spr) : spr;
+}
+const neb = [];
+const masses = [[70, 40, 120, 40], [300, 150, 110, 45], [190, 100, 60, 30]];
+for (const [mx, my, sx, sy] of masses) {
+  for (let i = 0; i < 9; i++) {
+    const w = ri(50, 120), h = ri(22, 42), seed = ri(1, 1e9);
+    const gx = (rnd() + rnd() + rnd() - 1.5) / 1.5, gy = (rnd() + rnd() + rnd() - 1.5) / 1.5;
+    const c = { map: Kit.generateCloudMap(seed, w, h), seed, w, h, x: Math.round(mx + gx * sx - w / 2), y: Math.round(my + gy * sy - h / 2), flip: rnd() < 0.5, lit: {} };
+    c.s = shadeToward(c, NEB, SUN.x, SUN.y, 0);
+    neb.push(c);
+  }
+}
+neb.sort((a, b) => b.w * b.h - a.w * a.h);  // big ones at the back
+function hotSprite(c, hx, hy) {
+  const [lx, ly] = Kit.lightFrom(c.x + c.w / 2, c.y + c.h / 2, hx, hy, -1);
+  const key = `${Math.round(lx * 3)},${Math.round(ly * 3)}`;
+  if (!c.lit[key]) c.lit[key] = shadeToward(c, NEB_HOT, hx, hy, 1);
+  return c.lit[key];
+}
+// radial dithered mask for the comet's light: dense at the head, thinning out to nothing
+const GLOW_R = 40;
+const [glowMask, gm] = Kit.offscreen(GLOW_R * 2 + 1, GLOW_R * 2 + 1);
+for (let y = 0; y <= GLOW_R * 2; y++) for (let x = 0; x <= GLOW_R * 2; x++) {
+  const d = Math.hypot(x - GLOW_R, y - GLOW_R) / GLOW_R;
+  if (d < 1 && dither(x, y, (1 - d) * 1.1)) { gm.fillStyle = '#fff'; gm.fillRect(x, y, 1, 1); }
+}
+const [glowTmp, gt] = Kit.offscreen(GLOW_R * 2 + 1, GLOW_R * 2 + 1);
+
+// ---- planet with rings, lit from the star; rendered once
+const PL = { x: 104, y: 134, r: 34 };
+const RING = { rx: 66, ry: 13, tilt: -0.22 };
+const L = (() => { const dx = SUN.x - PL.x, dy = SUN.y - PL.y, n = Math.hypot(dx, dy); return [dx / n * 0.85, dy / n * 0.85, 0.52]; })();
+const BANDS = [['#e2c79a', '#b9976a', '#7c6145', '#3a2c26'], ['#d39a6a', '#a8714a', '#6f4a34', '#33221f'], ['#efd8b0', '#c4a878', '#86704f', '#3d3226']];
+const [planet, pg] = Kit.offscreen(W, H), [ringBack, rbg] = Kit.offscreen(W, H), [ringFront, rfg] = Kit.offscreen(W, H);
+for (let y = PL.y - PL.r; y <= PL.y + PL.r; y++) for (let x = PL.x - PL.r; x <= PL.x + PL.r; x++) {
+  const nx = (x + 0.5 - PL.x) / PL.r, ny = (y + 0.5 - PL.y) / PL.r, q = nx * nx + ny * ny;
+  if (q > 1) continue;
+  const nz = Math.sqrt(1 - q), lam = nx * L[0] + ny * L[1] + nz * L[2];
+  const band = BANDS[Math.abs(Math.floor(ny * 7 + Math.sin(nx * 4 + ny * 9) * 0.35)) % 3];
+  let c = lam > 0.62 ? band[0] : lam > 0.34 ? band[1] : lam > 0.1 ? band[2] : band[3];
+  if (lam <= 0.1 && lam > -0.02 && dither(x, y, 0.5)) c = band[2];  // ragged terminator
+  if (lam <= -0.02) c = '#120d18';
+  pg.fillStyle = c; pg.fillRect(x, y, 1, 1);
+}
+{
+  const ct = Math.cos(RING.tilt), st = Math.sin(RING.tilt);
+  for (let y = PL.y - 40; y <= PL.y + 40; y++) for (let x = PL.x - 80; x <= PL.x + 80; x++) {
+    const dx = x + 0.5 - PL.x, dy = y + 0.5 - PL.y;
+    const u = dx * ct + dy * st, v = -dx * st + dy * ct;
+    const e = Math.hypot(u / RING.rx, v / RING.ry);
+    if (e < 0.66 || e > 1 || (e > 0.83 && e < 0.86)) continue;
+    // the planet's shadow falls on the ring on the side away from the star
+    const shadow = u < 0 && Math.abs(v) < 6 && e < 0.8;
+    const c = shadow ? '#2a2026' : e < 0.74 ? '#a48f74' : e < 0.83 ? '#d6c09a' : '#8d7a63';
+    const gx = v < 0 ? rbg : rfg;  // far half behind the planet, near half in front
+    gx.fillStyle = c; gx.fillRect(x, y, 1, 1);
+  }
+}
+
+// ---- comet: the fireball, with a particle tail; its head lights the nebula
+const TAIL = ['#fff6de', '#ffd65c', '#f7802c', '#d6402e', '#96204a'];
+let comet = null, tail = [], t = 0, nextComet = 120;
+
+function step() {
+  t++;
+  for (const l of layers) for (const s of l.arr) { s.x -= l.v * P.speed; if (s.x < 0) s.x += W; }
+
+  if (P.comet && !comet && --nextComet <= 0) comet = { x: -10, y: ri(20, 90), vx: 0.9, vy: 0.22 };
+  if (comet) {
+    comet.x += comet.vx; comet.y += comet.vy;
+    for (let k = 0; k < 3; k++) tail.push({ x: comet.x - rnd() * 2, y: comet.y + (rnd() - 0.5) * 2, vx: -0.25 - rnd() * 0.3, vy: -0.06 + (rnd() - 0.5) * 0.12, age: 0 });
+    if (comet.x > W + 30) { comet = null; nextComet = 600 + ri(0, 600); }
+  }
+  for (let i = tail.length - 1; i >= 0; i--) {
+    const p = tail[i]; p.x += p.vx; p.y += p.vy;
+    if (++p.age > 70) tail.splice(i, 1);
+  }
+}
+
+function draw() {
+  g.fillStyle = BG; g.fillRect(0, 0, W, H);
+  for (const [li, l] of layers.entries()) for (const s of l.arr) {
+    const c = s.tw && Math.sin(t * 0.03 + s.ph) < -0.5 ? '#3a3f66' : s.c;
+    px(g, s.x, s.y, c);
+    if (li === 2 && s.c === '#ffffff') { px(g, s.x - 1, s.y, '#4d5480'); px(g, s.x + 1, s.y, '#4d5480'); }
+  }
+  for (const c of neb) g.drawImage(c.s, Math.round(c.x), c.y);
+  // the comet's light: inside a dithered falloff around the head the nebula shows its comet-lit sprite
+  if (comet) {
+    const R = GLOW_R, hx = Math.round(comet.x), hy = Math.round(comet.y);
+    gt.globalCompositeOperation = 'source-over';
+    gt.clearRect(0, 0, 2 * R + 1, 2 * R + 1);
+    for (const c of neb) {
+      if (hx + R < c.x || hx - R > c.x + c.w || hy + R < c.y || hy - R > c.y + c.h) continue;
+      gt.drawImage(hotSprite(c, hx, hy), c.x - (hx - R), c.y - (hy - R));
+    }
+    gt.globalCompositeOperation = 'destination-in';
+    gt.drawImage(glowMask, 0, 0);
+    g.drawImage(glowTmp, hx - R, hy - R);
+  }
+  // the star
+  for (let d = 1; d <= 9; d++) {
+    px(g, SUN.x - d, SUN.y, d < 5 ? '#fff6de' : '#8f8aa8'); px(g, SUN.x + d, SUN.y, d < 5 ? '#fff6de' : '#8f8aa8');
+    px(g, SUN.x, SUN.y - d, d < 4 ? '#fff6de' : '#8f8aa8'); px(g, SUN.x, SUN.y + d, d < 4 ? '#fff6de' : '#8f8aa8');
+  }
+  g.fillStyle = '#ffffff'; g.fillRect(SUN.x - 1, SUN.y - 1, 3, 3);
+
+  // planet: far half of the rings, the moon when behind, the planet, near half, the moon when in front
+  const a = t * 0.004, mx = PL.x + Math.cos(a) * 58, my = PL.y + Math.sin(a) * 11 - Math.cos(a) * 12;
+  const moon = () => { g.fillStyle = '#7f7a8e'; g.fillRect(Math.round(mx) - 1, Math.round(my) - 1, 3, 3); px(g, mx + 1, my - 1, '#d8d2e6'); };
+  g.drawImage(ringBack, 0, 0);
+  if (Math.sin(a) < 0) moon();
+  g.drawImage(planet, 0, 0);
+  g.drawImage(ringFront, 0, 0);
+  if (Math.sin(a) >= 0) moon();
+
+  for (const p of tail) {
+    const k = p.age / 70;
+    if (!dither(p.x | 0, p.y | 0, 1 - k * 0.9)) continue;
+    px(g, p.x, p.y, TAIL[Math.min(4, Math.floor(k * 5))]);
+  }
+  if (comet) {
+    g.fillStyle = '#f7802c'; g.fillRect(Math.round(comet.x) - 2, Math.round(comet.y) - 1, 4, 3);
+    g.fillStyle = '#fff6de'; g.fillRect(Math.round(comet.x) - 1, Math.round(comet.y) - 1, 2, 2);
+  }
+}
+Kit.loop(step, draw);
+</script>
+</body>
+</html>

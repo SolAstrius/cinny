@@ -25,6 +25,7 @@ import {
 } from './types';
 import { CallControl } from './CallControl';
 import { CallControlState } from './CallControlState';
+import { CallScene } from './CallScene';
 
 export class CallEmbed {
   private mx: MatrixClient;
@@ -40,6 +41,8 @@ export class CallEmbed {
   public readonly control: CallControl;
 
   private readonly container: HTMLElement;
+
+  private readonly scene: CallScene;
 
   private readUpToMap: { [roomId: string]: string } = {}; // room ID to event ID
 
@@ -169,6 +172,7 @@ export class CallEmbed {
     this.room = room;
     this.iframe = iframe;
     this.container = container;
+    this.scene = new CallScene(mx, room, container, iframe);
 
     const controlState = initialControlState ?? new CallControlState(true, false, true);
     this.control = new CallControl(controlState, call, iframe);
@@ -262,6 +266,7 @@ export class CallEmbed {
     });
     this.call.stop();
     this.container.removeChild(this.iframe);
+    this.scene.dispose();
     this.control.dispose();
 
     this.mx.off(ClientEvent.Event, this.onEvent.bind(this));
