@@ -1,9 +1,10 @@
 import { style } from '@vanilla-extract/css';
 import { DefaultReset, color, config, toRem } from 'folds';
 
+const Mono = "ui-monospace, 'SF Mono', Menlo, Consolas, monospace";
+
 export const AuthLayout = style({
   minHeight: '100%',
-  backgroundColor: color.Background.Container,
   color: color.Background.OnContainer,
   padding: config.space.S400,
   paddingRight: config.space.S200,
@@ -15,27 +16,33 @@ export const AuthCard = style({
   marginTop: '1vh',
   maxWidth: toRem(460),
   width: '100%',
-  backgroundColor: color.Surface.Container,
+  backgroundColor: 'rgba(6, 20, 34, 0.82)',
   color: color.Surface.OnContainer,
-  borderRadius: config.radii.R400,
-  boxShadow: config.shadow.E100,
-  border: `${config.borderWidth.B300} solid ${color.Surface.ContainerLine}`,
+  borderRadius: 0,
+  border: '1px solid rgba(88, 208, 188, 0.35)',
+  boxShadow: '4px 4px 0 rgba(6, 20, 34, 0.6)',
   overflow: 'hidden',
+  fontFamily: Mono,
+});
+
+export const AuthWordmark = style({
+  height: toRem(30),
+  imageRendering: 'pixelated',
 });
 
 export const AuthLogo = style([
   DefaultReset,
   {
-    width: toRem(26),
-    height: toRem(26),
-
-    borderRadius: '50%',
+    width: toRem(32),
+    height: toRem(32),
+    imageRendering: 'pixelated',
   },
 ]);
 
 export const AuthHeader = style({
   padding: `0 ${config.space.S400}`,
-  borderBottomWidth: config.borderWidth.B300,
+  backgroundColor: 'transparent',
+  borderBottom: '1px solid rgba(88, 208, 188, 0.25)',
 });
 
 export const AuthCardContent = style({
@@ -50,4 +57,7 @@ export const AuthCardContent = style({
 
 export const AuthFooter = style({
   padding: config.space.S200,
+  fontFamily: Mono,
+  opacity: 0.75,
+  textShadow: '0 1px 0 #061422',
 });

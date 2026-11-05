@@ -21,6 +21,7 @@ import {
 import { AsyncStatus, useAsyncCallback } from '../../hooks/useAsyncCallback';
 import { LOGIN_PATH, REGISTER_PATH, RESET_PASSWORD_PATH } from '../paths';
 import CinnySVG from '../../../../public/res/svg/cinny.svg';
+import WordmarkSVG from '../../../../public/res/astr/wordmark.svg';
 import { ServerPicker } from './ServerPicker';
 import { AutoDiscoveryAction, autoDiscovery } from '../../cs-api';
 import { SpecVersionsLoader } from '../../components/SpecVersionsLoader';
@@ -134,8 +135,8 @@ export function AuthLayout() {
         <Box direction="Column" className={css.AuthCard}>
           <Header className={css.AuthHeader} size="600" variant="Surface">
             <Box grow="Yes" direction="Row" gap="300" alignItems="Center">
-              <img className={css.AuthLogo} src={CinnySVG} alt="astr.to" />
-              <Text size="H3">astr.to</Text>
+              <img className={css.AuthLogo} src={CinnySVG} alt="" />
+              <img className={css.AuthWordmark} src={WordmarkSVG} alt="astr.to" />
             </Box>
           </Header>
           <Box className={css.AuthCardContent} direction="Column">
