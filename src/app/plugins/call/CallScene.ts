@@ -10,11 +10,38 @@ export const SCENE_EVENT_TYPE = 'ink.astrius.room.scene';
 export const SCENES = ['rain', 'aurora', 'harbour', 'space'] as const;
 
 const STYLE_ID = 'astr-scene-style';
-// Element Call paints an opaque canvas colour on <body> and a grey on every tile; with a scene set,
-// the body goes transparent and tiles become a translucent shade so the scene shows through.
+
+// "Speaking" as a pixel equalizer next to the name instead of Element Call's gradient-filled tile:
+// a 4-frame sprite (9x8 px per frame, three 2-px bars), stepped, drawn at 2x.
+const EQ_FRAMES = [
+  [3, 6, 4],
+  [5, 3, 7],
+  [7, 5, 3],
+  [4, 7, 5],
+];
+const EQ_SVG = `<svg xmlns="http://www.w3.org/2000/svg" width="36" height="8" shape-rendering="crispEdges">${EQ_FRAMES.map(
+  (bars, f) => bars.map((h, i) => `<rect x="${f * 9 + 1 + i * 3}" y="${8 - h}" width="2" height="${h}" fill="#58d0bc"/>`).join('')
+).join('')}</svg>`;
+const EQ_URL = `url("data:image/svg+xml,${encodeURIComponent(EQ_SVG)}")`;
+
+// Element Call paints an opaque canvas colour on <body>, a grey on every tile and gradients on the
+// speaking/hand-raised tiles and the header/footer fades. With a scene set: transparent body,
+// translucent tiles, no gradients, and the equalizer marks who is talking. The hashed class names
+// belong to the pinned @element-hq/element-call-embedded 0.20.1; recheck them when it is upgraded.
 const CALL_CSS = `
 html, body, #root { background: transparent !important; }
 :root, [class*=cpd-theme-] { --video-tile-background: rgba(5, 9, 26, 0.42) !important; }
+[class*="_tile_"][class*="_speaking_"] { outline: none !important; }
+[class*="_tile_"][class*="_speaking_"]::before { background: none !important; opacity: 0 !important; }
+[class*="_tile_"][class*="_handRaised_"]::before { background: rgba(214, 160, 40, 0.3) !important; }
+[class*="_header_15f4n_"], [class*="_buttonBar_1mrho_"], [class*="_bar_1lobl_"]::before { background: none !important; }
+[class*="_nameTag_"] { background-color: rgba(8, 12, 32, 0.72) !important; }
+[class*="_speaking_"] [class*="_nameTag_"]::after {
+  content: ""; flex-shrink: 0; width: 18px; height: 16px; margin-inline: 2px 6px;
+  background: ${EQ_URL} 0 0 / 72px 16px no-repeat; image-rendering: pixelated;
+  animation: astr-eq 0.6s steps(4) infinite;
+}
+@keyframes astr-eq { to { background-position: -72px 0; } }
 `;
 
 export function sceneUrl(content: unknown, version: string): string | undefined {
