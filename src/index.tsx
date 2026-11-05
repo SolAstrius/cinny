@@ -35,6 +35,8 @@ if ('serviceWorker' in navigator) {
 
   navigator.serviceWorker.register(swUrl).then(sendSessionToSW);
   navigator.serviceWorker.ready.then(sendSessionToSW);
+  // a new worker taking over (redeploy, clients.claim) starts with no session: hand it ours
+  navigator.serviceWorker.addEventListener('controllerchange', sendSessionToSW);
 
   navigator.serviceWorker.addEventListener('message', (ev) => {
     const { type } = ev.data ?? {};

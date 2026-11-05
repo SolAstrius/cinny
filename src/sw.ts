@@ -13,6 +13,33 @@ type SessionInfo = {
  */
 const sessions = new Map<string, SessionInfo>();
 
+// astr.to: the in-memory map dies whenever the browser stops an idle worker or a new version
+// activates, and the page only pushes its session at registration. Keep the last valid session
+// in the Cache API too, so a fresh worker can authenticate media without a round-trip to the tab.
+const PERSIST_CACHE = 'astr-sw-session';
+const PERSIST_KEY = '/__astr_sw_session__';
+
+async function persistSession(session: SessionInfo | undefined) {
+  try {
+    const cache = await caches.open(PERSIST_CACHE);
+    if (session) await cache.put(PERSIST_KEY, new Response(JSON.stringify(session)));
+    else await cache.delete(PERSIST_KEY);
+  } catch {
+    // storage unavailable: fall back to the per-tab handshake only
+  }
+}
+
+async function loadPersistedSession(): Promise<SessionInfo | undefined> {
+  try {
+    const res = await (await caches.open(PERSIST_CACHE)).match(PERSIST_KEY);
+    if (!res) return undefined;
+    const s = await res.json();
+    return typeof s?.accessToken === 'string' && typeof s?.baseUrl === 'string' ? s : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
 const clientToResolve = new Map<string, (value: SessionInfo | undefined) => void>();
 const clientToSessionPromise = new Map<string, Promise<SessionInfo | undefined>>();
 
@@ -32,9 +59,11 @@ async function cleanupDeadClients() {
 function setSession(clientId: string, accessToken: any, baseUrl: any) {
   if (typeof accessToken === 'string' && typeof baseUrl === 'string') {
     sessions.set(clientId, { accessToken, baseUrl });
+    persistSession({ accessToken, baseUrl });
   } else {
     // Logout or invalid session
     sessions.delete(clientId);
+    persistSession(undefined);
   }
 
   const resolveSession = clientToResolve.get(clientId);
@@ -70,7 +99,15 @@ async function requestSessionWithTimeout(
   const sessionPromise = requestSession(client);
 
   const timeout = new Promise<undefined>((resolve) => {
-    setTimeout(() => resolve(undefined), timeoutMs);
+    setTimeout(() => {
+      // drop an unanswered request so the next media fetch asks the tab again instead of
+      // waiting on the same dead promise for the rest of the tab's life
+      if (!sessions.has(clientId)) {
+        clientToResolve.delete(clientId);
+        clientToSessionPromise.delete(clientId);
+      }
+      resolve(undefined);
+    }, timeoutMs);
   });
 
   return Promise.race([sessionPromise, timeout]);
@@ -148,11 +185,12 @@ self.addEventListener('fetch', (event: FetchEvent) => {
   }
 
   event.respondWith(
-    requestSessionWithTimeout(clientId).then((s) => {
+    (async () => {
+      const s = (await requestSessionWithTimeout(clientId, 1500)) ?? (await loadPersistedSession());
       if (s && validMediaRequest(url, s.baseUrl)) {
         return fetch(url, fetchConfig(s.accessToken));
       }
       return fetch(event.request);
-    })
+    })()
   );
 });
