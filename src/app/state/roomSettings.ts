@@ -5,6 +5,7 @@ export enum RoomSettingsPage {
   MembersPage,
   PermissionsPage,
   EmojisStickersPage,
+  ScenePage,
   DeveloperToolsPage,
 }
 

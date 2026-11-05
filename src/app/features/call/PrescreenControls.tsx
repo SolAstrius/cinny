@@ -3,6 +3,7 @@ import { Box, Button, Icon, Icons, Spinner, Text } from 'folds';
 import { SequenceCard } from '../../components/sequence-card';
 import * as css from './styles.css';
 import { ChatButton, ControlDivider, MicrophoneButton, SoundButton, VideoButton } from './Controls';
+import { SceneButton } from './SceneButton';
 import { useIsDirectRoom, useRoom } from '../../hooks/useRoom';
 import { useCallEmbed, useCallJoined, useCallStart } from '../../hooks/useCallEmbed';
 import { useCallPreferences } from '../../state/hooks/callPreferences';
@@ -26,7 +27,6 @@ export function PrescreenControls({ canJoin }: PrescreenControlsProps) {
   const { microphone, video, sound, toggleMicrophone, toggleVideo, toggleSound } =
     useCallPreferences();
 
-
   const handleMicrophoneToggle = useCallback(async () => toggleMicrophone(), [toggleMicrophone]);
   const handleVideoToggle = useCallback(async () => toggleVideo(), [toggleVideo]);
 
@@ -48,6 +48,7 @@ export function PrescreenControls({ canJoin }: PrescreenControlsProps) {
       <Box shrink="No" alignItems="Inherit" justifyContent="SpaceBetween" gap="200">
         <VideoButton enabled={video} onToggle={handleVideoToggle} />
         <ChatButton />
+        <SceneButton />
       </Box>
       <Box grow="Yes" direction="Column">
         <Button
