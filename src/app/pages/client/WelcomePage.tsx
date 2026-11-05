@@ -1,15 +1,17 @@
 import React from 'react';
 import { Page } from '../../components/page';
-import WordmarkSVG from '../../../../public/res/astr/wordmark.svg';
+import { BrandWordmark } from '../../components/pixel-wordmark';
+import { useBrand } from '../../hooks/useClientConfig';
 import * as css from './WelcomePage.css';
 
 export function WelcomePage() {
+  const brand = useBrand();
   return (
     <Page>
       <div className={css.Welcome}>
-        <img className={css.Wordmark} src={WordmarkSVG} alt="astr.to" />
+        <BrandWordmark className={css.Wordmark} />
         <div className={css.Rule} aria-hidden />
-        <p className={css.Line}>matrix for the fireball crew</p>
+        {brand.tagline && <p className={css.Line}>{brand.tagline}</p>}
         <p className={css.Prompt}>&gt; pick a room on the left, or start one with +</p>
         <a
           className={css.Source}

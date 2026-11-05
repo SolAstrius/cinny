@@ -1,6 +1,6 @@
 /* eslint-disable react/no-array-index-key */
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { Badge, Box, Button, Chip, config, Icon, Icons, Menu, Spinner, Text } from 'folds';
+import { Badge, Box, Button, Chip, color, config, Icon, Icons, Menu, Spinner, Text } from 'folds';
 import produce from 'immer';
 import { SequenceCard } from '../../../components/sequence-card';
 import { SequenceCardStyle } from '../styles.css';
@@ -19,6 +19,7 @@ import { StateEvent } from '../../../../types/matrix/room';
 import { PowerSwitcher } from '../../../components/power';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { useAlive } from '../../../hooks/useAlive';
+import { isAdminByDefault } from './DefaultPowerWarning';
 
 const USER_DEFAULT_LOCATION: PermissionLocation = {
   user: true,
@@ -111,6 +112,7 @@ export function PermissionGroups({
 
     const tag = getPowerLevelTag(powerLevelTags, value);
     const powerChanges = value !== power;
+    const adminByDefault = isAdminByDefault(powerLevels, value);
 
     return (
       <Box direction="Column" gap="100">
@@ -123,7 +125,15 @@ export function PermissionGroups({
         >
           <SettingTile
             title="Default Power"
-            description="Default power level for all users."
+            description={
+              adminByDefault ? (
+                <Box as="span" style={{ color: color.Critical.Main }}>
+                  <b>Everyone without their own level is an admin.</b>
+                </Box>
+              ) : (
+                'Default power level for all users.'
+              )
+            }
             after={
               <PowerSwitcher
                 powerLevelTags={powerLevelTags}

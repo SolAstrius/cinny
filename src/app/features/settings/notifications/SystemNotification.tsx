@@ -10,10 +10,12 @@ import { getNotificationState, usePermissionState } from '../../../hooks/usePerm
 import { useEmailNotifications } from '../../../hooks/useEmailNotifications';
 import { AsyncStatus, useAsyncCallback } from '../../../hooks/useAsyncCallback';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
+import { useBrand } from '../../../hooks/useClientConfig';
 
 function EmailNotification() {
   const mx = useMatrixClient();
   const [result, refreshResult] = useEmailNotifications();
+  const brand = useBrand();
 
   const [setState, setEnable] = useAsyncCallback(
     useCallback(
@@ -27,7 +29,7 @@ function EmailNotification() {
             device_display_name: email,
             lang: 'en',
             data: {
-              brand: 'astr.to',
+              brand: brand.name,
             },
             append: true,
           });
@@ -39,7 +41,7 @@ function EmailNotification() {
           kind: null,
         } as unknown as IPusherRequest);
       },
-      [mx]
+      [mx, brand.name]
     )
   );
 

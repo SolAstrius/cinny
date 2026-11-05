@@ -6,7 +6,12 @@ import { usePowerLevels } from '../../../hooks/usePowerLevels';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { StateEvent } from '../../../../types/matrix/room';
 import { usePermissionGroups } from './usePermissionItems';
-import { PermissionGroups, Powers, PowersEditor } from '../../common-settings/permissions';
+import {
+  DefaultPowerWarning,
+  PermissionGroups,
+  Powers,
+  PowersEditor,
+} from '../../common-settings/permissions';
 import { useRoomCreators } from '../../../hooks/useRoomCreators';
 import { useRoomPermissions } from '../../../hooks/useRoomPermissions';
 
@@ -55,6 +60,7 @@ export function Permissions({ requestClose }: PermissionsProps) {
         <Scroll hideTrack visibility="Hover">
           <PageContent>
             <Box direction="Column" gap="700">
+              <DefaultPowerWarning powerLevels={powerLevels} canEdit={canEditPermissions} />
               <Powers
                 powerLevels={powerLevels}
                 onEdit={canEditPowers ? handleEditPowers : undefined}
