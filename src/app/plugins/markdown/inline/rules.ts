@@ -86,6 +86,18 @@ export const CodeRule: InlineMDRule = {
   },
 };
 
+// Pandoc's rule for TeX maths: no whitespace right after the opening `$` or right before the
+// closing one, and no digit right after the closing one, so "costs $5 and $10" stays text.
+// `\$` is a literal dollar outside maths and TeX's own escaped dollar inside it.
+export const MATHS_INLINE_REG = /(?<![\\$])\$(?![\s$])((?:\\.|[^\\$\n])+?)(?<!\s)\$(?![\d$])/;
+export const MathsRule: InlineMDRule = {
+  match: (text) => text.match(MATHS_INLINE_REG),
+  html: (parse, match) => {
+    const [, g1] = match;
+    return `<span data-mx-maths="${g1}"><code>${g1}</code></span>`;
+  },
+};
+
 const SPOILER_MD_1 = '||';
 const SPOILER_PREFIX_1 = `${ESC_NEG_LB}\\|{2}`;
 const SPOILER_NEG_LA_1 = '(?!\\|)';
@@ -113,7 +125,8 @@ export const LinkRule: InlineMDRule = {
 
 export const INLINE_SEQUENCE_SET = '[*_~`|]';
 export const CAP_INLINE_SEQ = `${URL_NEG_LB}${INLINE_SEQUENCE_SET}`;
-const ESC_SEQ_1 = `\\\\(${INLINE_SEQUENCE_SET})`;
+const ESC_SEQUENCE_SET = '[*_~`|$]';
+const ESC_SEQ_1 = `\\\\(${ESC_SEQUENCE_SET})`;
 const ESC_REG_1 = new RegExp(`${URL_NEG_LB}${ESC_SEQ_1}`);
 export const EscapeRule: InlineMDRule = {
   match: (text) => text.match(ESC_REG_1),

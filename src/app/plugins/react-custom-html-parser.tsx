@@ -42,6 +42,7 @@ import {
 import { onEnterOrSpace } from '../utils/keyboard';
 import { copyToClipboard, tryDecodeURIComponent } from '../utils/dom';
 import { useTimeoutToggle } from '../hooks/useTimeoutToggle';
+import { Maths } from './maths/Maths';
 
 const ReactPrism = lazy(() => import('./react-prism/ReactPrism'));
 
@@ -316,6 +317,7 @@ const isInsideNoQuirk = (node: DOMText): boolean => {
   let { parent } = node;
   while (parent) {
     if ('name' in parent && NO_QUIRK_TAGS.includes(parent.name)) return true;
+    if ('attribs' in parent && parent.attribs['data-mx-maths'] !== undefined) return true;
     parent = parent.parent;
   }
   return false;
@@ -337,6 +339,10 @@ export const getReactCustomHtmlParser = (
       if (domNode instanceof Element && 'name' in domNode) {
         const { name, attribs, children, parent } = domNode;
         const props = attributesToProps(attribs);
+
+        if ((name === 'span' || name === 'div') && typeof attribs['data-mx-maths'] === 'string') {
+          return <Maths tex={attribs['data-mx-maths']} display={name === 'div'} />;
+        }
 
         if (name === 'h1') {
           return (

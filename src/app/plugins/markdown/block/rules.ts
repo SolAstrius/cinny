@@ -29,6 +29,20 @@ export const CodeBlockRule: BlockMDRule = {
   },
 };
 
+// display maths: `$$` opens a line and `$$` closes a line, on the same line or a later one
+const MATHS_BLOCK_REG_1 = /^\$\$(?!\$)((?:(?!\$\$)[\s\S])+?)(?<!\\)\$\$[ \t]*$\n?/m;
+export const MathsBlockRule: BlockMDRule = {
+  match: (text) => {
+    const match = text.match(MATHS_BLOCK_REG_1);
+    if (!match || match[1].trim() === '') return null;
+    return match;
+  },
+  html: (match) => {
+    const tex = match[1].trim();
+    return `<div data-mx-maths="${tex}"><code>${tex}</code></div>`;
+  },
+};
+
 const BLOCKQUOTE_MD_1 = '>';
 const QUOTE_LINE_PREFIX = /^> */;
 const BLOCKQUOTE_TRAILING_NEWLINE = /\n$/;
