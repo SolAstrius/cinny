@@ -52,12 +52,7 @@ import {
   getMemberAvatarMxc,
   getMemberDisplayName,
 } from '../../../utils/room';
-import {
-  getCanonicalAliasOrRoomId,
-  getMxIdLocalPart,
-  isRoomAlias,
-  mxcUrlToHttp,
-} from '../../../utils/matrix';
+import { getMxIdLocalPart, mxcUrlToHttp } from '../../../utils/matrix';
 import { MessageLayout, MessageSpacing } from '../../../state/settings';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
 import { useRecentEmoji } from '../../../hooks/useRecentEmoji';
@@ -79,6 +74,7 @@ import { MemberPowerTag, StateEvent } from '../../../../types/matrix/room';
 import { PowerIcon } from '../../../components/power';
 import colorMXID from '../../../../util/colorMXID';
 import { getPowerTagIconSrc } from '../../../hooks/useMemberPowerTag';
+import { hasStickerMenuItems, MessageStickerItems } from '../../sticker-import';
 
 export type ReactionHandler = (keyOrMxc: string, shortcode: string) => void;
 
@@ -324,8 +320,6 @@ export const MessageCopyLinkItem = as<
     onClose?: () => void;
   }
 >(({ room, mEvent, onClose, ...props }, ref) => {
-  const mx = useMatrixClient();
-
   const handleCopy = () => {
     const eventId = mEvent.getId();
     if (!eventId) return;
@@ -1089,6 +1083,18 @@ export const Message = as<'div', MessageProps>(
                             <MessagePinItem room={room} mEvent={mEvent} onClose={closeMenu} />
                           )}
                         </Box>
+                        {hasStickerMenuItems(mEvent) && (
+                          <>
+                            <Line size="300" />
+                            <Box direction="Column" gap="100" className={css.MessageMenuGroup}>
+                              <MessageStickerItems
+                                room={room}
+                                mEvent={mEvent}
+                                onClose={closeMenu}
+                              />
+                            </Box>
+                          </>
+                        )}
                         {((!mEvent.isRedacted() && canDelete) ||
                           mEvent.getSender() !== mx.getUserId()) && (
                           <>

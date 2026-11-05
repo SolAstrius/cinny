@@ -21,8 +21,6 @@ import { useEmojiGroupLabels } from './useEmojiGroupLabels';
 import { useEmojiGroupIcons } from './useEmojiGroupIcons';
 import { preventScrollWithArrowKey, stopPropagation } from '../../utils/keyboard';
 import { useGlobalImagePacks, useRelevantImagePacks } from '../../hooks/useImagePacks';
-import { AccountDataEvent } from '../../../types/matrix/accountData';
-import { EmoteRoomsContent } from '../../plugins/custom-emoji/types';
 import { useMatrixClient } from '../../hooks/useMatrixClient';
 import { useRecentEmoji } from '../../hooks/useRecentEmoji';
 import { isUserId, mxcUrlToHttp } from '../../utils/matrix';
@@ -32,7 +30,7 @@ import { useDebounce } from '../../hooks/useDebounce';
 import { useThrottle } from '../../hooks/useThrottle';
 import { addRecentEmoji } from '../../plugins/recent-emoji';
 import { useMediaAuthentication } from '../../hooks/useMediaAuthentication';
-import { ImagePack, ImageUsage, PackImageReader } from '../../plugins/custom-emoji';
+import { ImagePack, ImageUsage, makePackGlobal, PackImageReader } from '../../plugins/custom-emoji';
 import { getEmoticonSearchStr } from '../../plugins/utils';
 import {
   SearchInput,
@@ -415,12 +413,7 @@ export function EmojiBoard({
       if (!addr) return;
       setPinningPack(pack.id);
       try {
-        const content =
-          mx.getAccountData(AccountDataEvent.PoniesEmoteRooms)?.getContent<EmoteRoomsContent>() ??
-          {};
-        const rooms = { ...(content.rooms ?? {}) };
-        rooms[addr.roomId] = { ...(rooms[addr.roomId] ?? {}), [addr.stateKey]: {} };
-        await mx.setAccountData(AccountDataEvent.PoniesEmoteRooms, { ...content, rooms });
+        await makePackGlobal(mx, addr);
       } finally {
         setPinningPack(undefined);
       }
