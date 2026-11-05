@@ -11,6 +11,8 @@ export type BrandConfig = {
   subtitle?: string;
   homepage?: { label?: string; url?: string } | null;
   wordmark?: string;
+  /** small square icon in the sign-in panel's title bar; defaults to the app logo */
+  logo?: string;
 };
 
 export type ClientConfig = {
@@ -46,6 +48,7 @@ export type Brand = {
   subtitle: string;
   homepage?: { label: string; url: string };
   wordmark?: string;
+  logo?: string;
 };
 
 // astr.to: what the fork shows when config.json has no `brand`
@@ -69,6 +72,7 @@ export const getBrand = (clientConfig: ClientConfig): Brand => {
     subtitle: brand.subtitle ?? DEFAULT_BRAND.subtitle,
     homepage,
     wordmark: brand.wordmark || undefined,
+    logo: brand.logo || undefined,
   };
 };
 

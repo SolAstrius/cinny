@@ -157,8 +157,8 @@ export function AuthLayout() {
 
           <section className={css.Console} aria-label="Sign in">
             <div className={css.ConsoleBar}>
-              <img className={css.ConsoleLogo} src={CinnySVG} alt="" />
-              <span>{server}://login</span>
+              <img className={css.ConsoleLogo} src={brand.logo ?? CinnySVG} alt="" />
+              <span>{brand.name}://login</span>
             </div>
             <div className={css.ConsoleBody}>
               <div className={css.Prompt}>
