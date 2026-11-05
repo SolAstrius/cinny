@@ -106,6 +106,7 @@ import { GetContentCallback, MessageEvent, StateEvent } from '../../../types/mat
 import { useKeyDown } from '../../hooks/useKeyDown';
 import { useDocumentFocusChange } from '../../hooks/useDocumentFocusChange';
 import { RenderMessageContent } from '../../components/RenderMessageContent';
+import { SenderQuirk } from '../../components/quirk/Quirk';
 import { Image } from '../../components/media';
 import { ImageViewer } from '../../components/image-viewer';
 import { roomToParentsAtom } from '../../state/room/roomToParents';
@@ -1095,18 +1096,20 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
             {mEvent.isRedacted() ? (
               <RedactedContent reason={mEvent.getUnsigned().redacted_because?.content.reason} />
             ) : (
-              <RenderMessageContent
-                displayName={senderDisplayName}
-                msgType={mEvent.getContent().msgtype ?? ''}
-                ts={mEvent.getTs()}
-                edited={!!editedEvent}
-                getContent={getContent}
-                mediaAutoLoad={mediaAutoLoad}
-                urlPreview={showUrlPreview}
-                htmlReactParserOptions={htmlReactParserOptions}
-                linkifyOpts={linkifyOpts}
-                outlineAttachment={messageLayout === MessageLayout.Bubble}
-              />
+              <SenderQuirk userId={senderId} msgType={mEvent.getContent().msgtype ?? ''}>
+                <RenderMessageContent
+                  displayName={senderDisplayName}
+                  msgType={mEvent.getContent().msgtype ?? ''}
+                  ts={mEvent.getTs()}
+                  edited={!!editedEvent}
+                  getContent={getContent}
+                  mediaAutoLoad={mediaAutoLoad}
+                  urlPreview={showUrlPreview}
+                  htmlReactParserOptions={htmlReactParserOptions}
+                  linkifyOpts={linkifyOpts}
+                  outlineAttachment={messageLayout === MessageLayout.Bubble}
+                />
+              </SenderQuirk>
             )}
           </Message>
         );
@@ -1201,18 +1204,20 @@ export function RoomTimeline({ room, eventId, roomInputRef, editor }: RoomTimeli
                   const senderDisplayName =
                     getMemberDisplayName(room, senderId) ?? getMxIdLocalPart(senderId) ?? senderId;
                   return (
-                    <RenderMessageContent
-                      displayName={senderDisplayName}
-                      msgType={mEvent.getContent().msgtype ?? ''}
-                      ts={mEvent.getTs()}
-                      edited={!!editedEvent}
-                      getContent={getContent}
-                      mediaAutoLoad={mediaAutoLoad}
-                      urlPreview={showUrlPreview}
-                      htmlReactParserOptions={htmlReactParserOptions}
-                      linkifyOpts={linkifyOpts}
-                      outlineAttachment={messageLayout === MessageLayout.Bubble}
-                    />
+                    <SenderQuirk userId={senderId} msgType={mEvent.getContent().msgtype ?? ''}>
+                      <RenderMessageContent
+                        displayName={senderDisplayName}
+                        msgType={mEvent.getContent().msgtype ?? ''}
+                        ts={mEvent.getTs()}
+                        edited={!!editedEvent}
+                        getContent={getContent}
+                        mediaAutoLoad={mediaAutoLoad}
+                        urlPreview={showUrlPreview}
+                        htmlReactParserOptions={htmlReactParserOptions}
+                        linkifyOpts={linkifyOpts}
+                        outlineAttachment={messageLayout === MessageLayout.Bubble}
+                      />
+                    </SenderQuirk>
                   );
                 }
                 if (mEvent.getType() === MessageEvent.RoomMessageEncrypted)

@@ -5,6 +5,7 @@ import { Opts } from 'linkifyjs';
 import { MessageEmptyContent } from './content';
 import { sanitizeCustomHtml } from '../../utils/sanitize';
 import { highlightText, scaleSystemEmoji } from '../../plugins/react-custom-html-parser';
+import { QuirkAffix, renderQuirkText, useQuirk } from '../quirk/Quirk';
 
 type RenderBodyProps = {
   body: string;
@@ -21,7 +22,24 @@ export function RenderBody({
   htmlReactParserOptions,
   linkifyOpts,
 }: RenderBodyProps) {
+  const quirk = useQuirk();
+
   if (body === '') <MessageEmptyContent />;
+
+  if (quirk && !highlightRegex) {
+    return (
+      <>
+        <QuirkAffix text={quirk.prefix} quirk={quirk} />
+        {customBody ? (
+          parse(sanitizeCustomHtml(customBody), htmlReactParserOptions)
+        ) : (
+          <Linkify options={linkifyOpts}>{renderQuirkText(body, quirk, scaleSystemEmoji)}</Linkify>
+        )}
+        <QuirkAffix text={quirk.suffix} quirk={quirk} />
+      </>
+    );
+  }
+
   if (customBody) {
     if (customBody === '') <MessageEmptyContent />;
     return parse(sanitizeCustomHtml(customBody), htmlReactParserOptions);

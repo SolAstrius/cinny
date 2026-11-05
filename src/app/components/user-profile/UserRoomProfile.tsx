@@ -20,6 +20,7 @@ import { useRoomCreators } from '../../hooks/useRoomCreators';
 import { useRoomPermissions } from '../../hooks/useRoomPermissions';
 import { useMemberPowerCompare } from '../../hooks/useMemberPowerCompare';
 import { CreatorChip } from './CreatorChip';
+import { UserStatus } from './UserStatus';
 import { getDirectCreatePath, withSearchParam } from '../../pages/pathUtils';
 import { DirectCreateSearchParams } from '../../pages/paths';
 
@@ -93,6 +94,7 @@ export function UserRoomProfile({ userId }: UserRoomProfileProps) {
               </Box>
             )}
           </Box>
+          <UserStatus userId={userId} />
           <Box alignItems="Center" gap="200" wrap="Wrap">
             {server && <ServerChip server={server} />}
             <ShareChip userId={userId} />

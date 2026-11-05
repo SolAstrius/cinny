@@ -43,6 +43,8 @@ import { ModalWide } from '../../../styles/Modal.css';
 import { createUploadAtom, UploadSuccess } from '../../../state/upload';
 import { CompactUploadCardRenderer } from '../../../components/upload-card';
 import { useCapabilities } from '../../../hooks/useCapabilities';
+import { ProfileTextField } from './ProfileExtras';
+import { MUSIC_PROFILE_KEY, STATUS_PROFILE_KEY } from '../../../hooks/useExtendedProfile';
 
 type ProfileProps = {
   profile: UserProfile;
@@ -319,6 +321,16 @@ export function Profile() {
       >
         <ProfileAvatar userId={userId} profile={profile} />
         <ProfileDisplayName userId={userId} profile={profile} />
+        <ProfileTextField
+          profileKey={STATUS_PROFILE_KEY}
+          title="Status"
+          placeholder="What are you up to?"
+        />
+        <ProfileTextField
+          profileKey={MUSIC_PROFILE_KEY}
+          title="Now Playing"
+          placeholder="Artist — Track"
+        />
       </SequenceCard>
     </Box>
   );
