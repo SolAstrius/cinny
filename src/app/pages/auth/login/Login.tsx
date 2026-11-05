@@ -1,5 +1,5 @@
 import React, { useMemo } from 'react';
-import { Box, Text, color } from 'folds';
+import { Text, color } from 'folds';
 import { Link, useSearchParams } from 'react-router-dom';
 import { SSOAction } from 'matrix-js-sdk';
 import { useAuthFlows } from '../../../hooks/useAuthFlows';
@@ -8,7 +8,7 @@ import { useParsedLoginFlows } from '../../../hooks/useParsedLoginFlows';
 import { PasswordLoginForm } from './PasswordLoginForm';
 import { SSOLogin } from '../SSOLogin';
 import { TokenLogin } from './TokenLogin';
-import { OrDivider } from '../OrDivider';
+import * as css from '../styles.css';
 import { getLoginPath, getRegisterPath, withSearchParam } from '../../pathUtils';
 import { usePathWithOrigin } from '../../../hooks/usePathWithOrigin';
 import { LoginPathSearchParams } from '../../paths';
@@ -54,46 +54,46 @@ export function Login() {
 
   const parsedFlows = useParsedLoginFlows(loginFlows.flows);
 
+  const ssoProviders = parsedFlows.sso?.identity_providers;
+
   return (
-    <Box direction="Column" gap="500">
-      <Text size="H2" priority="400">
-        Login
-      </Text>
+    <div className={css.ConsoleStack}>
       {parsedFlows.token && loginSearchParams.loginToken && (
         <TokenLogin token={loginSearchParams.loginToken} />
       )}
-      {parsedFlows.password && (
-        <>
-          <PasswordLoginForm
-            defaultUsername={loginSearchParams.username}
-            defaultEmail={loginSearchParams.email}
-          />
-          <span data-spacing-node />
-          {parsedFlows.sso && <OrDivider />}
-        </>
-      )}
       {parsedFlows.sso && (
         <>
+          <div className={css.Prompt}>
+            <span className={css.PromptKey}>&gt; method</span>
+            <span className={css.PromptText}>authentik</span>
+          </div>
           <SSOLogin
-            providers={parsedFlows.sso.identity_providers}
+            providers={ssoProviders}
             redirectUrl={ssoRedirectUrl}
             action={SSOAction.LOGIN}
-            saveScreenSpace={parsedFlows.password !== undefined}
+            saveScreenSpace={false}
           />
-          <span data-spacing-node />
         </>
+      )}
+      {parsedFlows.password && (
+        <details className={css.Fold} open={!parsedFlows.sso || undefined}>
+          <summary className={css.FoldSummary}>&gt; password login</summary>
+          <div className={css.FoldBody}>
+            <PasswordLoginForm
+              defaultUsername={loginSearchParams.username}
+              defaultEmail={loginSearchParams.email}
+            />
+          </div>
+        </details>
       )}
       {!parsedFlows.password && !parsedFlows.sso && (
-        <>
-          <Text style={{ color: color.Critical.Main }}>
-            {`This client does not support login on "${server}" homeserver. Password and SSO based login method not found.`}
-          </Text>
-          <span data-spacing-node />
-        </>
+        <Text style={{ color: color.Critical.Main }}>
+          {`This client does not support login on "${server}": no password or SSO login method found.`}
+        </Text>
       )}
-      <Text align="Center">
-        Do not have an account? <Link to={getRegisterPath(server)}>Register</Link>
-      </Text>
-    </Box>
+      <p className={css.ConsoleNote}>
+        no account? <Link to={getRegisterPath(server)}>&gt; register</Link>
+      </p>
+    </div>
   );
 }

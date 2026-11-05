@@ -120,16 +120,17 @@ def hexc(c):
 
 
 def wordmark_svg(s, col=ACID):
-    w, h = len(s) * 4 - 1 + 1, 5 + 1
+    # 2 grid units per font pixel; shade offset by half a pixel, as the 404 does
+    w, h = (len(s) * 4 - 1) * 2 + 1, 5 * 2 + 1
     shade, fg = [], []
     for n, ch in enumerate(s.upper()):
         g = GB[GL.index(ch)]
         for r in range(5):
             for q in range(3):
                 if g[r * 3 + q] == "1":
-                    x, y = n * 4 + q, r
-                    shade.append(f'<rect x="{x + 1}" y="{y + 1}" width="1" height="1"/>')
-                    fg.append(f'<rect x="{x}" y="{y}" width="1" height="1"/>')
+                    x, y = (n * 4 + q) * 2, r * 2
+                    shade.append(f'<rect x="{x + 1}" y="{y + 1}" width="2" height="2"/>')
+                    fg.append(f'<rect x="{x}" y="{y}" width="2" height="2"/>')
     return (f'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 {w} {h}" shape-rendering="crispEdges">'
             f'<g fill="{hexc(SHADE)}" fill-opacity="0.85">{"".join(shade)}</g>'
             f'<g fill="{hexc(col)}">{"".join(fg)}</g></svg>\n')

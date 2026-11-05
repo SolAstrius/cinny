@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect } from 'react';
-import { Box, Header, Scroll, Spinner, Text, color } from 'folds';
+import { Box, Scroll, Spinner, Text, color } from 'folds';
 import {
   Outlet,
   generatePath,
@@ -123,88 +123,109 @@ export function AuthLayout() {
   const [autoDiscoveryError, autoDiscoveryInfo] =
     discoveryState.status === AsyncStatus.Success ? discoveryState.data.response : [];
 
+  const statusByAsync: Record<string, 'online' | 'unreachable' | 'searching'> = {
+    [AsyncStatus.Success]: 'online',
+    [AsyncStatus.Error]: 'unreachable',
+  };
+  const status = statusByAsync[discoveryState.status] ?? 'searching';
+  const statusLabel = {
+    online: '● ONLINE',
+    unreachable: '× UNREACHABLE',
+    searching: '… SEARCHING',
+  }[status];
+
   return (
     <Scroll variant="Background" visibility="Hover" size="300" hideTrack>
-      <Box
-        className={classNames(css.AuthLayout, PatternsCss.BackgroundDotPattern)}
-        direction="Column"
-        alignItems="Center"
-        justifyContent="SpaceBetween"
-        gap="400"
-      >
-        <Box direction="Column" className={css.AuthCard}>
-          <Header className={css.AuthHeader} size="600" variant="Surface">
-            <Box grow="Yes" direction="Row" gap="300" alignItems="Center">
-              <img className={css.AuthLogo} src={CinnySVG} alt="" />
-              <img className={css.AuthWordmark} src={WordmarkSVG} alt="astr.to" />
-            </Box>
-          </Header>
-          <Box className={css.AuthCardContent} direction="Column">
-            <Box direction="Column" gap="100">
-              <Text as="label" size="L400" priority="300">
-                Homeserver
-              </Text>
-              <ServerPicker
-                server={server}
-                serverList={clientConfig.homeserverList ?? []}
-                allowCustomServer={clientConfig.allowCustomHomeservers}
-                onServerChange={selectServer}
-              />
-            </Box>
-            {discoveryState.status === AsyncStatus.Loading && (
-              <AuthLayoutLoading message="Looking for homeserver..." />
-            )}
-            {discoveryState.status === AsyncStatus.Error && (
-              <AuthLayoutError message="Failed to find homeserver." />
-            )}
-            {autoDiscoveryError?.action === AutoDiscoveryAction.FAIL_PROMPT && (
-              <AuthLayoutError
-                message={`Failed to connect. Homeserver configuration found with ${autoDiscoveryError.host} appears unusable.`}
-              />
-            )}
-            {autoDiscoveryError?.action === AutoDiscoveryAction.FAIL_ERROR && (
-              <AuthLayoutError message="Failed to connect. Homeserver configuration base_url appears invalid." />
-            )}
-            {discoveryState.status === AsyncStatus.Success && autoDiscoveryInfo && (
-              <AuthServerProvider value={discoveryState.data.serverName}>
-                <AutoDiscoveryInfoProvider value={autoDiscoveryInfo}>
-                  <SpecVersionsLoader
-                    baseUrl={autoDiscoveryInfo['m.homeserver'].base_url}
-                    fallback={() => (
-                      <AuthLayoutLoading
-                        message={`Connecting to ${autoDiscoveryInfo['m.homeserver'].base_url}`}
-                      />
-                    )}
-                    error={() => (
-                      <AuthLayoutError message="Failed to connect. Either homeserver is unavailable at this moment or does not exist." />
-                    )}
-                  >
-                    {(specVersions) => (
-                      <SpecVersionsProvider value={specVersions}>
-                        <AuthFlowsLoader
-                          fallback={() => (
-                            <AuthLayoutLoading message="Loading authentication flow..." />
-                          )}
-                          error={() => (
-                            <AuthLayoutError message="Failed to get authentication flow information." />
-                          )}
-                        >
-                          {(authFlows) => (
-                            <AuthFlowsProvider value={authFlows}>
-                              <Outlet />
-                            </AuthFlowsProvider>
-                          )}
-                        </AuthFlowsLoader>
-                      </SpecVersionsProvider>
-                    )}
-                  </SpecVersionsLoader>
-                </AutoDiscoveryInfoProvider>
-              </AuthServerProvider>
-            )}
-          </Box>
-        </Box>
+      <div className={classNames(css.AuthLayout, PatternsCss.BackgroundDotPattern)}>
+        <div className={css.Hud}>
+          <span>
+            MATRIX <span className={css.HudDim}>/</span> {server.toUpperCase()}
+          </span>
+          <span className={css.HudStatus} data-status={status}>
+            {statusLabel}
+          </span>
+        </div>
+
+        <div className={css.Stage}>
+          <div className={css.Hero}>
+            <img className={css.HeroWordmark} src={WordmarkSVG} alt="astr.to" />
+            <div className={css.HeroRule} aria-hidden />
+            <p className={css.HeroTagline}>matrix for the fireball crew</p>
+          </div>
+
+          <section className={css.Console} aria-label="Sign in">
+            <div className={css.ConsoleBar}>
+              <img className={css.ConsoleLogo} src={CinnySVG} alt="" />
+              <span>{server}://login</span>
+            </div>
+            <div className={css.ConsoleBody}>
+              <div className={css.Prompt}>
+                <span className={css.PromptKey}>&gt; homeserver</span>
+                <div className={css.PromptValue}>
+                  <ServerPicker
+                    server={server}
+                    serverList={clientConfig.homeserverList ?? []}
+                    allowCustomServer={clientConfig.allowCustomHomeservers}
+                    onServerChange={selectServer}
+                  />
+                </div>
+              </div>
+              {discoveryState.status === AsyncStatus.Loading && (
+                <AuthLayoutLoading message="looking for homeserver…" />
+              )}
+              {discoveryState.status === AsyncStatus.Error && (
+                <AuthLayoutError message="failed to find homeserver." />
+              )}
+              {autoDiscoveryError?.action === AutoDiscoveryAction.FAIL_PROMPT && (
+                <AuthLayoutError
+                  message={`failed to connect: configuration found with ${autoDiscoveryError.host} appears unusable.`}
+                />
+              )}
+              {autoDiscoveryError?.action === AutoDiscoveryAction.FAIL_ERROR && (
+                <AuthLayoutError message="failed to connect: homeserver base_url appears invalid." />
+              )}
+              {discoveryState.status === AsyncStatus.Success && autoDiscoveryInfo && (
+                <AuthServerProvider value={discoveryState.data.serverName}>
+                  <AutoDiscoveryInfoProvider value={autoDiscoveryInfo}>
+                    <SpecVersionsLoader
+                      baseUrl={autoDiscoveryInfo['m.homeserver'].base_url}
+                      fallback={() => (
+                        <AuthLayoutLoading
+                          message={`connecting to ${autoDiscoveryInfo['m.homeserver'].base_url}`}
+                        />
+                      )}
+                      error={() => (
+                        <AuthLayoutError message="failed to connect: homeserver unavailable or does not exist." />
+                      )}
+                    >
+                      {(specVersions) => (
+                        <SpecVersionsProvider value={specVersions}>
+                          <AuthFlowsLoader
+                            fallback={() => (
+                              <AuthLayoutLoading message="loading sign-in methods…" />
+                            )}
+                            error={() => (
+                              <AuthLayoutError message="failed to get sign-in methods." />
+                            )}
+                          >
+                            {(authFlows) => (
+                              <AuthFlowsProvider value={authFlows}>
+                                <Outlet />
+                              </AuthFlowsProvider>
+                            )}
+                          </AuthFlowsLoader>
+                        </SpecVersionsProvider>
+                      )}
+                    </SpecVersionsLoader>
+                  </AutoDiscoveryInfoProvider>
+                </AuthServerProvider>
+              )}
+            </div>
+          </section>
+        </div>
+
         <AuthFooter />
-      </Box>
+      </div>
     </Scroll>
   );
 }
