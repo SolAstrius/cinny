@@ -16,12 +16,13 @@ import * as PatternsCss from '../../styles/Patterns.css';
 import {
   clientAllowedServer,
   clientDefaultServer,
+  getBrand,
   useClientConfig,
 } from '../../hooks/useClientConfig';
 import { AsyncStatus, useAsyncCallback } from '../../hooks/useAsyncCallback';
 import { LOGIN_PATH, REGISTER_PATH, RESET_PASSWORD_PATH } from '../paths';
 import CinnySVG from '../../../../public/res/svg/cinny.svg';
-import WordmarkSVG from '../../../../public/res/astr/wordmark.svg';
+import { BrandWordmark } from '../../components/pixel-wordmark';
 import { ServerPicker } from './ServerPicker';
 import { AutoDiscoveryAction, autoDiscovery } from '../../cs-api';
 import { SpecVersionsLoader } from '../../components/SpecVersionsLoader';
@@ -72,6 +73,7 @@ export function AuthLayout() {
   const { server: urlEncodedServer } = useParams();
 
   const clientConfig = useClientConfig();
+  const brand = getBrand(clientConfig);
 
   const defaultServer = clientDefaultServer(clientConfig);
   let server: string = urlEncodedServer ? tryDecodeURIComponent(urlEncodedServer) : defaultServer;
@@ -148,15 +150,15 @@ export function AuthLayout() {
 
         <div className={css.Stage}>
           <div className={css.Hero}>
-            <img className={css.HeroWordmark} src={WordmarkSVG} alt="astr.to" />
+            <BrandWordmark className={css.HeroWordmark} />
             <div className={css.HeroRule} aria-hidden />
-            <p className={css.HeroTagline}>matrix for the fireball crew</p>
+            {brand.tagline && <p className={css.HeroTagline}>{brand.tagline}</p>}
           </div>
 
           <section className={css.Console} aria-label="Sign in">
             <div className={css.ConsoleBar}>
-              <img className={css.ConsoleLogo} src={CinnySVG} alt="" />
-              <span>{server}://login</span>
+              <img className={css.ConsoleLogo} src={brand.logo ?? CinnySVG} alt="" />
+              <span>{brand.name}://login</span>
             </div>
             <div className={css.ConsoleBody}>
               <div className={css.Prompt}>

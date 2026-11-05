@@ -7,12 +7,14 @@ import { SettingTile } from '../../../components/setting-tile';
 import CinnySVG from '../../../../../public/res/svg/cinny.svg';
 import { clearCacheAndReload } from '../../../../client/initMatrix';
 import { useMatrixClient } from '../../../hooks/useMatrixClient';
+import { useBrand } from '../../../hooks/useClientConfig';
 
 type AboutProps = {
   requestClose: () => void;
 };
 export function About({ requestClose }: AboutProps) {
   const mx = useMatrixClient();
+  const brand = useBrand();
 
   return (
     <Page>
@@ -39,16 +41,16 @@ export function About({ requestClose }: AboutProps) {
                   <img
                     style={{ width: toRem(60), height: toRem(60) }}
                     src={CinnySVG}
-                    alt="astr.to"
+                    alt={brand.name}
                   />
                 </Box>
                 <Box direction="Column" gap="300">
                   <Box direction="Column" gap="100">
                     <Box gap="100" alignItems="End">
-                      <Text size="H3">astr.to</Text>
+                      <Text size="H3">{brand.name}</Text>
                       <Text size="T200">Cinny v4.12.8</Text>
                     </Box>
-                    <Text>Matrix-клиент astr.to на основе Cinny.</Text>
+                    <Text>Matrix-клиент {brand.name} на основе Cinny.</Text>
                   </Box>
 
                   <Box gap="200" wrap="Wrap">

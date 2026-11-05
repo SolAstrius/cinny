@@ -54,6 +54,24 @@ webserver. Alternatively, you can just pull the docker image from
 
 * The default homeservers and explore pages are defined in [`config.json`](config.json).
 
+* Branding (astr.to fork) is the optional `brand` object in `config.json`; every key falls back to the astr.to value:
+    ```json
+    "brand": {
+      "name": "astr.to",
+      "tagline": "matrix for the fireball crew",
+      "subtitle": "matrix homeserver",
+      "homepage": { "label": "astrius.ink", "url": "https://astrius.ink/" },
+      "wordmark": "/public/res/astr/wordmark.svg",
+      "logo": "/public/res/svg/cinny.svg"
+    }
+    ```
+    * `name`: page title, About, email notifications, and the wordmark drawn in the 3x5 pixel font (A–Z, 0–9, `. : / - > ! ? # , ( ) + = % _`, space; anything else is a blank cell).
+    * `tagline`, `subtitle`: under the wordmark and in the sign-in footer (`name · subtitle`); `""` hides them.
+    * `homepage`: footer link; `null` hides it.
+    * `wordmark`: an image URL that replaces the drawn wordmark.
+    * `logo`: the icon in the sign-in panel's title bar (`<name>://login`).
+    * Favicons, app icons and `manifest.json` stay static; regenerate them with `contrib/astr/make_brand.py`.
+
 * You need to set up redirects to serve the assests. Example configurations;
 [netlify](netlify.toml), [nginx](contrib/nginx/cinny.domain.tld.conf),
 [caddy](contrib/caddy/caddyfile).
